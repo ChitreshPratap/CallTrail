@@ -35,3 +35,26 @@ End Sub
 Public Sub ShowClaimHistoryViewer()
     frmClaimHistory.Show
 End Sub
+
+' --- Bulk claim entry via the bulkClaimAdd sheet (see modBulkImport) ---
+
+' Creates/clears the bulkClaimAdd sheet
+Public Sub BulkSheetSetup()
+    SetupBulkSheet
+End Sub
+
+' Optional: load a CSV/xlsx of claims into bulkClaimAdd
+Public Sub BulkLoadFromFile()
+    LoadClaimsFromFile
+End Sub
+
+' Dry run - flags problems, changes nothing
+Public Sub BulkCheck()
+    CheckBulkClaims
+End Sub
+
+' MAIN action: validate, import valid rows (deleting them from the
+' sheet), leave invalid rows behind with their error text
+Public Sub BulkAddClaims()
+    ProcessBulkClaims
+End Sub
