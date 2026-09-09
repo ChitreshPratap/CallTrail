@@ -1,0 +1,35 @@
+I need to build an application in VBA Excel and need to use Excel worksheet as database.
+
+We have a process of claim amount recovery of each claim id.
+We have claim ids in which caller need to call to the claim id customers and need to enter the comment and status of the claim (Pending or Close). 
+
+We have multi callers if the claim is pending then other caller can make calls and enter comment and status until the claim is closed.
+
+We need to build the application which maintains each caller history with respect to each claim id.
+
+Claim history should include:
+Caller Name, calling date time, caller comment, caller status (pending/close)
+
+Claim has the columns:
+ClimId, CallerLocation, claim status, callingAttempted, updatedLocation, claimInsertionDate, claiminsertBy
+
+
+The user should have the capability to add the claims when he add the claims then claimInsertionate (the date at which claim is inserted into the database), claimInsertedBy(The user name who inserted the claim in the database).
+
+Admin should have the rights to change the caller location.
+
+Every user should have the capability to select Claim Status (Whether Pending /Closed) and add comment there. Column Claim Status should show the latest status of the claim.
+
+CallingAttempted --> Should show the total number of calls used to closed the claim.
+
+
+I have the databse excel file --> Claim_Calling_Tracker which will be located in a centralized share drive.
+and vba code should be in separate file which will be shared to each user.
+
+Make vba code in such a way that every user used it and details get updated in centralized database.
+
+Used best approach.
+
+If possible use the Html + vba modern approach to build the user form and calling so application looks good and trending.
+
+Make the application modular so that other features can be easily embedded and reused. 
