@@ -1,23 +1,27 @@
-Attribute VB_Name = "modDataAccess"
+VERSION 1.0 CLASS
+BEGIN
+  MultiUse = -1  'True
+END
+Attribute VB_Name = "clsClaimRepository"
+Attribute VB_GlobalNameSpace = False
+Attribute VB_Creatable = False
+Attribute VB_PredeclaredId = False
+Attribute VB_Exposed = False
 Option Explicit
 
 ' =====================================================================
-' modDataAccess
-' Every read/write against the shared database goes through here.
-' UI code (forms) should NEVER touch worksheet cells directly.
+' clsClaimRepository
+' Object-oriented replacement for modDataAccess. Forms work with
+' clsClaim / clsHistoryEntry objects instead of raw arrays and column
+' numbers. Still built on modUtils (OpenCentralDB/CloseCentralDB/
+' GetColIndex) so the file-locking/retry behaviour is unchanged -
+' only the "shape" of what callers deal with is different.
 '
-' All column access uses GetColIndex(ws, "HeaderName") instead of
-' hard-coded numbers. This means: to add a NEW column later (e.g.
-' "Priority", "ClaimAmount"), you add the header to row 1 of the
-' Claims sheet and add ONE new line here that reads/writes it -
-' nothing else changes, and no existing column position can break.
+' Usage from a form:
+'   Dim repo As New clsClaimRepository
+'   If repo.AddClaim("C123","Delhi","Acme","Query text",Date) Then ...
 ' =====================================================================
 
-' ---------------------------------------------------------------------
-' Add a brand-new claim.
-' Mandatory user inputs: claimID, claimSite, providerName, claimQuery, creationDate
-' Auto-filled: ClaimStatus=Pending, Attempt=0, ClaimUpdatedSite=claimSite,
-'              ClaimInsertionDate=Now, ClaimInsertedBy=current user
 ' ---------------------------------------------------------------------
 Public Function AddClaim(ByVal claimID As String, ByVal claimSite As String, _
                           ByVal providerName As String, ByVal claimQuery As String, _
@@ -36,7 +40,6 @@ Public Function AddClaim(ByVal claimID As String, ByVal claimSite As String, _
     End If
 
     newRow = ws.Cells(ws.Rows.Count, GetColIndex(ws, "ClaimID")).End(xlUp).Row + 1
-
     ws.Cells(newRow, GetColIndex(ws, "ClaimID")).Value = claimID
     ws.Cells(newRow, GetColIndex(ws, "ClaimSite")).Value = claimSite
     ws.Cells(newRow, GetColIndex(ws, "ClaimProviderName")).Value = providerName
@@ -47,8 +50,6 @@ Public Function AddClaim(ByVal claimID As String, ByVal claimSite As String, _
     ws.Cells(newRow, GetColIndex(ws, "ClaimUpdatedSite")).Value = claimSite
     ws.Cells(newRow, GetColIndex(ws, "ClaimInsertionDate")).Value = Now
     ws.Cells(newRow, GetColIndex(ws, "ClaimInsertedBy")).Value = GetWindowsUserName()
-    ' LastUpdatedDate / LastUpdatedBy / LastComment / ClaimClosedDate stay
-    ' blank until the first call is logged - see LogCallAndUpdateStatus.
 
     CloseCentralDB wb, True
     AddClaim = True
@@ -61,15 +62,10 @@ Fail:
 End Function
 
 ' ---------------------------------------------------------------------
-' Any caller logs a call: appends a History row and refreshes the
-' rollup fields on the Claims row (latest status, attempt count,
-' last-touched audit fields, and closed date if applicable).
-' ---------------------------------------------------------------------
 Public Function LogCallAndUpdateStatus(ByVal claimID As String, ByVal comment As String, _
                                         ByVal newStatus As String) As Boolean
     Dim wb As Workbook, wsHist As Worksheet, wsClaims As Worksheet
-    Dim claimRow As Long, histRow As Long, attempts As Long
-    Dim statusCol As Long
+    Dim claimRow As Long, histRow As Long, statusCol As Long
 
     On Error GoTo Fail
     Set wb = OpenCentralDB()
@@ -92,7 +88,6 @@ Public Function LogCallAndUpdateStatus(ByVal claimID As String, ByVal comment As
         Exit Function
     End If
 
-    ' -- append history row (full unedited trail) --
     histRow = wsHist.Cells(wsHist.Rows.Count, GetColIndex(wsHist, "HistoryID")).End(xlUp).Row + 1
     wsHist.Cells(histRow, GetColIndex(wsHist, "HistoryID")).Value = NextHistoryID(wb)
     wsHist.Cells(histRow, GetColIndex(wsHist, "ClaimID")).Value = claimID
@@ -101,9 +96,8 @@ Public Function LogCallAndUpdateStatus(ByVal claimID As String, ByVal comment As
     wsHist.Cells(histRow, GetColIndex(wsHist, "CallerComment")).Value = comment
     wsHist.Cells(histRow, GetColIndex(wsHist, "CallerStatus")).Value = newStatus
 
-    ' -- refresh Claims rollup / audit fields --
-    attempts = wsClaims.Cells(claimRow, GetColIndex(wsClaims, "Attempt")).Value + 1
-    wsClaims.Cells(claimRow, GetColIndex(wsClaims, "Attempt")).Value = attempts
+    wsClaims.Cells(claimRow, GetColIndex(wsClaims, "Attempt")).Value = _
+        wsClaims.Cells(claimRow, GetColIndex(wsClaims, "Attempt")).Value + 1
     wsClaims.Cells(claimRow, statusCol).Value = newStatus
     wsClaims.Cells(claimRow, GetColIndex(wsClaims, "LastUpdatedDate")).Value = Now
     wsClaims.Cells(claimRow, GetColIndex(wsClaims, "LastUpdatedBy")).Value = GetWindowsUserName()
@@ -123,8 +117,6 @@ Fail:
     LogCallAndUpdateStatus = False
 End Function
 
-' ---------------------------------------------------------------------
-' Admin-only: change a claim's updated site.
 ' ---------------------------------------------------------------------
 Public Function ChangeUpdatedSite(ByVal claimID As String, ByVal newSite As String) As Boolean
     Dim wb As Workbook, ws As Worksheet, claimRow As Long
@@ -163,77 +155,89 @@ Fail:
 End Function
 
 ' ---------------------------------------------------------------------
-' Read helpers for populating the UI / dashboards.
-' Returns the full used range (headers included) so new columns
-' automatically flow through - the consumer matches by header name.
+' Returns a Collection of clsClaim objects - ready for a dashboard loop,
+' e.g.: For Each c In repo.GetAllClaims(): If c.IsClosed Then ...
 ' ---------------------------------------------------------------------
-Public Function GetAllClaims() As Variant
-    Dim wb As Workbook, ws As Worksheet, lastRow As Long, lastCol As Long
+Public Function GetAllClaims() As Collection
+    Dim wb As Workbook, ws As Worksheet, lastRow As Long, i As Long
+    Dim result As New Collection
+    Dim c As clsClaim
+
     On Error GoTo Fail
     Set wb = OpenCentralDB()
     Set ws = wb.Sheets(SHEET_CLAIMS)
-    lastRow = ws.Cells(ws.Rows.Count, 1).End(xlUp).Row
-    lastCol = ws.Cells(1, ws.Columns.Count).End(xlToLeft).Column
-    If lastRow < 2 Then
-        GetAllClaims = Empty
-    Else
-        GetAllClaims = ws.Range(ws.Cells(1, 1), ws.Cells(lastRow, lastCol)).Value
-    End If
+    lastRow = ws.Cells(ws.Rows.Count, GetColIndex(ws, "ClaimID")).End(xlUp).Row
+
+    For i = 2 To lastRow
+        Set c = New clsClaim
+        c.ClaimID = ws.Cells(i, GetColIndex(ws, "ClaimID")).Value
+        c.ClaimSite = ws.Cells(i, GetColIndex(ws, "ClaimSite")).Value
+        c.ClaimProviderName = ws.Cells(i, GetColIndex(ws, "ClaimProviderName")).Value
+        c.ClaimQuery = ws.Cells(i, GetColIndex(ws, "ClaimQuery")).Value
+        c.ClaimCreationDate = ws.Cells(i, GetColIndex(ws, "ClaimCreationDate")).Value
+        c.ClaimStatus = ws.Cells(i, GetColIndex(ws, "ClaimStatus")).Value
+        c.Attempt = ws.Cells(i, GetColIndex(ws, "Attempt")).Value
+        c.ClaimUpdatedSite = ws.Cells(i, GetColIndex(ws, "ClaimUpdatedSite")).Value
+        c.ClaimInsertionDate = ws.Cells(i, GetColIndex(ws, "ClaimInsertionDate")).Value
+        c.ClaimInsertedBy = ws.Cells(i, GetColIndex(ws, "ClaimInsertedBy")).Value
+        c.LastUpdatedDate = ws.Cells(i, GetColIndex(ws, "LastUpdatedDate")).Value
+        c.LastUpdatedBy = ws.Cells(i, GetColIndex(ws, "LastUpdatedBy")).Value
+        c.LastComment = ws.Cells(i, GetColIndex(ws, "LastComment")).Value
+        c.ClaimClosedDate = ws.Cells(i, GetColIndex(ws, "ClaimClosedDate")).Value
+        result.Add c, c.ClaimID
+    Next i
+
     CloseCentralDB wb, False
+    Set GetAllClaims = result
     Exit Function
+
 Fail:
     MsgBox "Could not read claims: " & Err.Description, vbCritical
     If Not wb Is Nothing Then CloseCentralDB wb, False
-    GetAllClaims = Empty
+    Set GetAllClaims = New Collection
 End Function
 
-Public Function GetHistoryForClaim(ByVal claimID As String) As Variant
+' Returns Nothing if not found - callers must check.
+Public Function FindClaim(ByVal claimID As String) As clsClaim
+    Dim all As Collection
+    Set all = GetAllClaims()
+    On Error Resume Next
+    Set FindClaim = all(claimID)
+    On Error GoTo 0
+End Function
+
+' Returns a Collection of clsHistoryEntry for one claim, oldest first.
+Public Function GetHistory(ByVal claimID As String) As Collection
     Dim wb As Workbook, ws As Worksheet, lastRow As Long, i As Long
-    Dim results() As Variant, matchCount As Long, r As Long
-    Dim idCol As Long, nameCol As Long, dtCol As Long, commentCol As Long, statusCol As Long
+    Dim idCol As Long
+    Dim result As New Collection
+    Dim h As clsHistoryEntry
 
     On Error GoTo Fail
     Set wb = OpenCentralDB()
     Set ws = wb.Sheets(SHEET_HISTORY)
     idCol = GetColIndex(ws, "ClaimID")
-    nameCol = GetColIndex(ws, "CallerName")
-    dtCol = GetColIndex(ws, "CallDateTime")
-    commentCol = GetColIndex(ws, "CallerComment")
-    statusCol = GetColIndex(ws, "CallerStatus")
-
     lastRow = ws.Cells(ws.Rows.Count, idCol).End(xlUp).Row
 
-    If lastRow < 2 Then
-        CloseCentralDB wb, False
-        GetHistoryForClaim = Empty
-        Exit Function
-    End If
-
-    matchCount = Application.WorksheetFunction.CountIf(ws.Range(ws.Cells(2, idCol), ws.Cells(lastRow, idCol)), claimID)
-    If matchCount = 0 Then
-        CloseCentralDB wb, False
-        GetHistoryForClaim = Empty
-        Exit Function
-    End If
-
-    ReDim results(1 To matchCount, 1 To 4) ' CallerName, CallDateTime, Comment, Status
-    r = 0
     For i = 2 To lastRow
         If Trim$(CStr(ws.Cells(i, idCol).Value)) = Trim$(claimID) Then
-            r = r + 1
-            results(r, 1) = ws.Cells(i, nameCol).Value
-            results(r, 2) = ws.Cells(i, dtCol).Value
-            results(r, 3) = ws.Cells(i, commentCol).Value
-            results(r, 4) = ws.Cells(i, statusCol).Value
+            Set h = New clsHistoryEntry
+            h.HistoryID = ws.Cells(i, GetColIndex(ws, "HistoryID")).Value
+            h.ClaimID = ws.Cells(i, idCol).Value
+            h.CallerName = ws.Cells(i, GetColIndex(ws, "CallerName")).Value
+            h.CallDateTime = ws.Cells(i, GetColIndex(ws, "CallDateTime")).Value
+            h.CallerComment = ws.Cells(i, GetColIndex(ws, "CallerComment")).Value
+            h.CallerStatus = ws.Cells(i, GetColIndex(ws, "CallerStatus")).Value
+            result.Add h
         End If
     Next i
 
     CloseCentralDB wb, False
-    GetHistoryForClaim = results
+    Set GetHistory = result
     Exit Function
 
 Fail:
     MsgBox "Could not read history: " & Err.Description, vbCritical
     If Not wb Is Nothing Then CloseCentralDB wb, False
-    GetHistoryForClaim = Empty
+    Set GetHistory = New Collection
 End Function

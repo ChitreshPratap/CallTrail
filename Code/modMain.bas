@@ -17,7 +17,7 @@ Public Sub ShowUpdateClaimForm()
     frmUpdateClaim.Show
 End Sub
 
-Public Sub ShowAdminLocationForm()
+Public Sub ShowAdminSiteForm()
     Dim wb As Workbook
     Dim isAdmin As Boolean
 
@@ -29,7 +29,7 @@ Public Sub ShowAdminLocationForm()
         MsgBox "This feature is restricted to Admin users.", vbExclamation, "Access Denied"
         Exit Sub
     End If
-    frmAdminLocation.Show
+    frmAdminSite.Show
 End Sub
 
 Public Sub ShowClaimHistoryViewer()
