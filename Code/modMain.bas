@@ -36,6 +36,11 @@ Public Sub ShowClaimHistoryViewer()
     frmClaimHistory.Show
 End Sub
 
+' Browse/filter all claims with full detail + call history
+Public Sub ShowViewClaims()
+    frmViewClaims.Show
+End Sub
+
 ' --- Bulk claim entry via the bulkClaimAdd sheet (see modBulkImport) ---
 
 ' Creates/clears the bulkClaimAdd sheet
