@@ -25,7 +25,7 @@ Option Explicit
 ' The visible result is identical; it's just far faster and safer.
 ' =====================================================================
 
-Public Const BULK_SHEET As String = "bulkClaimAdd"
+Public Const BULK_SHEET As String = "BulkClaimAdd"
 
 ' Columns the user fills (the 5 mandatory fields).
 ' Everything else on the Claims sheet is auto-filled at insert time.
@@ -40,6 +40,7 @@ Private Const COL_ERROR As Long = 6    ' validation output, not user input
 ' MAIN ENTRY POINT - validate, import the good rows, keep the bad ones
 ' =====================================================================
 Public Sub ProcessBulkClaims()
+
     Dim ws As Worksheet, lastRow As Long, i As Long
     Dim dataArr As Variant, errorArr() As Variant
     Dim repo As New clsClaimRepository
@@ -52,12 +53,14 @@ Public Sub ProcessBulkClaims()
     Dim seen As Object, existing As Object, idKey As String
 
     Set ws = GetBulkSheet()
+    ws.Select
     If ws Is Nothing Then Exit Sub
 
     lastRow = ws.Cells(ws.Rows.Count, COL_ID).End(xlUp).Row
     If lastRow < 2 Then
         MsgBox "No claims to process. Enter your claims in the " & BULK_SHEET & _
                " sheet starting at row 2.", vbExclamation, "Nothing to Process"
+        ws.Select
         Exit Sub
     End If
 
@@ -71,7 +74,7 @@ Public Sub ProcessBulkClaims()
     ' --- pull existing claim IDs from the DB ONCE, not once per row ---
     Set existing = CreateObject("Scripting.Dictionary")
     For Each c In repo.GetAllClaims()
-        existing(Trim$(LCase$(c.ClaimID))) = True
+        existing(Trim$(LCase$(c.claimID))) = True
     Next c
     Set seen = CreateObject("Scripting.Dictionary")
 
@@ -81,14 +84,14 @@ Public Sub ProcessBulkClaims()
 
         If problems = "" Then
             Set c = New clsClaim
-            c.ClaimID = Trim$(CStr(dataArr(i, COL_ID)))
-            c.ClaimSite = Trim$(CStr(dataArr(i, COL_SITE)))
+            c.claimID = Trim$(CStr(dataArr(i, COL_ID)))
+            c.claimSite = Trim$(CStr(dataArr(i, COL_SITE)))
             c.ClaimProviderName = Trim$(CStr(dataArr(i, COL_PROVIDER)))
-            c.ClaimQuery = Trim$(CStr(dataArr(i, COL_QUERY)))
+            c.claimQuery = Trim$(CStr(dataArr(i, COL_QUERY)))
             c.ClaimCreationDate = CDate(dataArr(i, COL_CREATED))
             batch.Add c
 
-            idKey = Trim$(LCase$(c.ClaimID))
+            idKey = Trim$(LCase$(c.claimID))
             seen(idKey) = True    ' so a later duplicate in the same sheet is caught
 
             errorArr(i, 1) = ""
@@ -135,7 +138,7 @@ Public Sub ProcessBulkClaims()
         If Not rowsToDelete Is Nothing Then rowsToDelete.Delete
         Application.ScreenUpdating = True
     End If
-
+    ws.Select
     MsgBox insertedCount & " claim(s) added to the database." & vbCrLf & _
            IIf(skipped <> "", vbCrLf & "Skipped as already present: " & skipped & vbCrLf & _
                               "(rows left in the sheet - please review)" & vbCrLf, "") & _
@@ -143,7 +146,6 @@ Public Sub ProcessBulkClaims()
                                  " - correct them and run again.", ""), _
            vbInformation, "Bulk Add Complete"
     Exit Sub
-
 Fail:
     Application.ScreenUpdating = True
     MsgBox "Bulk add failed: " & Err.Description, vbCritical
@@ -154,6 +156,7 @@ End Sub
 ' Useful before committing, and for checking corrections.
 ' =====================================================================
 Public Sub CheckBulkClaims()
+    
     Dim ws As Worksheet, lastRow As Long, i As Long
     Dim dataArr As Variant, errorArr() As Variant
     Dim repo As New clsClaimRepository
@@ -178,13 +181,17 @@ Public Sub CheckBulkClaims()
     ReDim errorArr(1 To UBound(dataArr, 1), 1 To 1)
 
     Set existing = CreateObject("Scripting.Dictionary")
+    
     For Each c In repo.GetAllClaims()
-        existing(Trim$(LCase$(c.ClaimID))) = True
+        existing(Trim$(LCase$(c.claimID))) = True
     Next c
+    
     Set seen = CreateObject("Scripting.Dictionary")
 
     For i = 1 To UBound(dataArr, 1)
+        
         problems = ValidateRow(dataArr, i, seen, existing)
+        
         If problems = "" Then
             errorArr(i, 1) = ""
             seen(Trim$(LCase$(CStr(dataArr(i, COL_ID))))) = True
@@ -249,8 +256,8 @@ Public Sub SetupBulkSheet()
 
     With ws.Range(ws.Cells(1, 1), ws.Cells(1, COL_ERROR))
         .Font.Bold = True
-        .Font.Color = RGB(255, 255, 255)
-        .Interior.Color = RGB(31, 78, 120)
+        .Font.color = RGB(255, 255, 255)
+        .Interior.color = RGB(31, 78, 120)
         .HorizontalAlignment = xlCenter
     End With
 
@@ -272,6 +279,7 @@ Public Sub SetupBulkSheet()
            "Then click 'Add Claims to Database'. Valid rows are imported and " & _
            "removed from this sheet; rows with problems stay here with the reason " & _
            "shown in the ValidationError column.", vbInformation, "Bulk Sheet Ready"
+           
 End Sub
 
 ' =====================================================================
@@ -302,7 +310,7 @@ Public Sub LoadClaimsFromFile()
     srcLast = srcWs.Cells(srcWs.Rows.Count, 1).End(xlUp).Row
 
     If srcLast < 2 Then
-        srcWb.Close SaveChanges:=False
+        srcWb.Close saveChanges:=False
         Application.ScreenUpdating = True
         MsgBox "That file has no data rows below the header.", vbExclamation
         Exit Sub
@@ -315,7 +323,7 @@ Public Sub LoadClaimsFromFile()
     ws.Range(ws.Cells(pasteRow, COL_ID), ws.Cells(pasteRow + srcLast - 2, COL_CREATED)).Value = _
         srcWs.Range(srcWs.Cells(2, 1), srcWs.Cells(srcLast, 5)).Value
 
-    srcWb.Close SaveChanges:=False
+    srcWb.Close saveChanges:=False
     Application.ScreenUpdating = True
 
     ws.Activate
@@ -327,7 +335,7 @@ Public Sub LoadClaimsFromFile()
 Fail:
     Application.ScreenUpdating = True
     On Error Resume Next
-    If Not srcWb Is Nothing Then srcWb.Close SaveChanges:=False
+    If Not srcWb Is Nothing Then srcWb.Close saveChanges:=False
     On Error GoTo 0
     MsgBox "Could not load that file: " & Err.Description, vbCritical
 End Sub
@@ -385,11 +393,11 @@ Private Sub ColorErrorColumn(ws As Worksheet, ByVal lastRow As Long)
     Dim i As Long
     With ws.Range(ws.Cells(2, COL_ERROR), ws.Cells(lastRow, COL_ERROR))
         .Interior.ColorIndex = xlNone
-        .Font.Color = RGB(150, 0, 0)
+        .Font.color = RGB(150, 0, 0)
     End With
     For i = 2 To lastRow
         If ws.Cells(i, COL_ERROR).Value <> "" Then
-            ws.Cells(i, COL_ERROR).Interior.Color = RGB(255, 214, 214)  ' soft red
+            ws.Cells(i, COL_ERROR).Interior.color = RGB(255, 214, 214)  ' soft red
         End If
     Next i
 End Sub

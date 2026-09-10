@@ -31,17 +31,17 @@ Private pLastUpdatedBy As String
 Private pLastComment As String
 Private pClaimClosedDate As Variant   ' Variant: blank until Closed
 
-Public Property Get ClaimID() As String: ClaimID = pClaimID: End Property
-Public Property Let ClaimID(ByVal v As String): pClaimID = v: End Property
+Public Property Get claimID() As String: claimID = pClaimID: End Property
+Public Property Let claimID(ByVal v As String): pClaimID = v: End Property
 
-Public Property Get ClaimSite() As String: ClaimSite = pClaimSite: End Property
-Public Property Let ClaimSite(ByVal v As String): pClaimSite = v: End Property
+Public Property Get claimSite() As String: claimSite = pClaimSite: End Property
+Public Property Let claimSite(ByVal v As String): pClaimSite = v: End Property
 
 Public Property Get ClaimProviderName() As String: ClaimProviderName = pClaimProviderName: End Property
 Public Property Let ClaimProviderName(ByVal v As String): pClaimProviderName = v: End Property
 
-Public Property Get ClaimQuery() As String: ClaimQuery = pClaimQuery: End Property
-Public Property Let ClaimQuery(ByVal v As String): pClaimQuery = v: End Property
+Public Property Get claimQuery() As String: claimQuery = pClaimQuery: End Property
+Public Property Let claimQuery(ByVal v As String): pClaimQuery = v: End Property
 
 Public Property Get ClaimCreationDate() As Date: ClaimCreationDate = pClaimCreationDate: End Property
 Public Property Let ClaimCreationDate(ByVal v As Date): pClaimCreationDate = v: End Property
@@ -49,8 +49,8 @@ Public Property Let ClaimCreationDate(ByVal v As Date): pClaimCreationDate = v: 
 Public Property Get ClaimStatus() As String: ClaimStatus = pClaimStatus: End Property
 Public Property Let ClaimStatus(ByVal v As String): pClaimStatus = v: End Property
 
-Public Property Get Attempt() As Long: Attempt = pAttempt: End Property
-Public Property Let Attempt(ByVal v As Long): pAttempt = v: End Property
+Public Property Get attempt() As Long: attempt = pAttempt: End Property
+Public Property Let attempt(ByVal v As Long): pAttempt = v: End Property
 
 Public Property Get ClaimUpdatedSite() As String: ClaimUpdatedSite = pClaimUpdatedSite: End Property
 Public Property Let ClaimUpdatedSite(ByVal v As String): pClaimUpdatedSite = v: End Property
@@ -87,3 +87,4 @@ Public Property Get DaysOpen() As Long
         DaysOpen = CLng(Date) - CLng(pClaimCreationDate)
     End If
 End Property
+

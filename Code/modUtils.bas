@@ -1,6 +1,11 @@
 Attribute VB_Name = "modUtils"
 Option Explicit
 
+Private savedScreenUpdating As Boolean
+Private savedCalculation As XlCalculation
+Private savedEnableEvents As Boolean
+
+
 ' =====================================================================
 ' modUtils
 ' Generic helpers used across the app. Keep this file free of any
@@ -49,9 +54,9 @@ End Function
 ' this alone is a real speedup once the DB has any volume of data,
 ' and costs nothing since these are always restored in CloseCentralDB.
 ' ---------------------------------------------------------------------
-Private savedScreenUpdating As Boolean
-Private savedCalculation As XlCalculation
-Private savedEnableEvents As Boolean
+'Private savedScreenUpdating As Boolean
+'Private savedCalculation As XlCalculation
+'Private savedEnableEvents As Boolean
 
 Public Function OpenCentralDB() As Workbook
     Dim attempt As Long
@@ -90,9 +95,9 @@ End Function
 Public Sub CloseCentralDB(wb As Workbook, ByVal saveChanges As Boolean)
     On Error Resume Next
     If saveChanges Then
-        wb.Save
+        wb.save
     End If
-    wb.Close SaveChanges:=False ' already saved above; avoids double prompt
+    wb.Close saveChanges:=False ' already saved above; avoids double prompt
     On Error GoTo 0
     RestoreAppSettings
 End Sub

@@ -24,8 +24,8 @@ Private pCallerStatus As String
 Public Property Get HistoryID() As Long: HistoryID = pHistoryID: End Property
 Public Property Let HistoryID(ByVal v As Long): pHistoryID = v: End Property
 
-Public Property Get ClaimID() As String: ClaimID = pClaimID: End Property
-Public Property Let ClaimID(ByVal v As String): pClaimID = v: End Property
+Public Property Get claimID() As String: claimID = pClaimID: End Property
+Public Property Let claimID(ByVal v As String): pClaimID = v: End Property
 
 Public Property Get CallerName() As String: CallerName = pCallerName: End Property
 Public Property Let CallerName(ByVal v As String): pCallerName = v: End Property
@@ -38,3 +38,4 @@ Public Property Let CallerComment(ByVal v As String): pCallerComment = v: End Pr
 
 Public Property Get CallerStatus() As String: CallerStatus = pCallerStatus: End Property
 Public Property Let CallerStatus(ByVal v As String): pCallerStatus = v: End Property
+

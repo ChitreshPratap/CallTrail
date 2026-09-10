@@ -9,9 +9,39 @@ Option Explicit
 ' modDataAccess or modUtils.
 ' =====================================================================
 
+'Public Sub reloadAddin()
+'    AddIns("RibbonAddins").Installed = False: AddIns("RibbonAddins").Installed = True
+'End Sub
+'
+'Public Sub btnAddManualClaim()
+'    ShowAddClaimForm
+'End Sub
+'
+'Public Sub btnAddBulkClaim()
+'    MsgBox "Bulk claim add called", vbOKOnly
+'End Sub
+'
+
+'Show the form to add claim manually
 Public Sub ShowAddClaimForm()
-    frmAddClaim.Show
+    
+    'frmAddClaim.Show
+    UserFormMain.Show
+    
 End Sub
+
+Public Sub ShowAddClaimForm_tab(tabNumber As Integer)
+    
+    'frmAddClaim.Show
+    Dim uForm As UserFormMain
+    Set uForm = New UserFormMain
+    uForm.setPage tabNumber
+    uForm.Show
+    Unload uForm
+    Set uForm = Nothing
+    
+End Sub
+
 
 Public Sub ShowUpdateClaimForm()
     frmUpdateClaim.Show
@@ -38,28 +68,28 @@ End Sub
 
 ' Browse/filter all claims with full detail + call history
 Public Sub ShowViewClaims()
-    frmViewClaims.Show
+    Frmviewclaims.Show
 End Sub
 
 ' --- Bulk claim entry via the bulkClaimAdd sheet (see modBulkImport) ---
 
 ' Creates/clears the bulkClaimAdd sheet
 Public Sub BulkSheetSetup()
-    SetupBulkSheet
+    modBulkImport.SetupBulkSheet
 End Sub
 
 ' Optional: load a CSV/xlsx of claims into bulkClaimAdd
 Public Sub BulkLoadFromFile()
-    LoadClaimsFromFile
+    modBulkImport.LoadClaimsFromFile
 End Sub
 
 ' Dry run - flags problems, changes nothing
 Public Sub BulkCheck()
-    CheckBulkClaims
+    modBulkImport.CheckBulkClaims
 End Sub
 
 ' MAIN action: validate, import valid rows (deleting them from the
 ' sheet), leave invalid rows behind with their error text
 Public Sub BulkAddClaims()
-    ProcessBulkClaims
+    modBulkImport.ProcessBulkClaims
 End Sub
