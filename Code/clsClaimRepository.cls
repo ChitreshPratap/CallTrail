@@ -200,13 +200,13 @@ Public Function GetAllClaims() As Collection
 
         For i = 1 To UBound(dataArr, 1)
             Set c = New clsClaim
-            c.claimID = dataArr(i, ColIdx(hmap, "ClaimID"))
-            c.claimSite = dataArr(i, ColIdx(hmap, "ClaimSite"))
+            c.ClaimID = dataArr(i, ColIdx(hmap, "ClaimID"))
+            c.ClaimSite = dataArr(i, ColIdx(hmap, "ClaimSite"))
             c.ClaimProviderName = dataArr(i, ColIdx(hmap, "ClaimProviderName"))
-            c.claimQuery = dataArr(i, ColIdx(hmap, "ClaimQuery"))
+            c.ClaimQuery = dataArr(i, ColIdx(hmap, "ClaimQuery"))
             c.ClaimCreationDate = dataArr(i, ColIdx(hmap, "ClaimCreationDate"))
             c.ClaimStatus = dataArr(i, ColIdx(hmap, "ClaimStatus"))
-            c.attempt = dataArr(i, ColIdx(hmap, "Attempt"))
+            c.Attempt = dataArr(i, ColIdx(hmap, "Attempt"))
             c.ClaimUpdatedSite = dataArr(i, ColIdx(hmap, "ClaimUpdatedSite"))
             c.ClaimInsertionDate = dataArr(i, ColIdx(hmap, "ClaimInsertionDate"))
             c.ClaimInsertedBy = dataArr(i, ColIdx(hmap, "ClaimInsertedBy"))
@@ -214,7 +214,7 @@ Public Function GetAllClaims() As Collection
             c.LastUpdatedBy = dataArr(i, ColIdx(hmap, "LastUpdatedBy"))
             c.LastComment = dataArr(i, ColIdx(hmap, "LastComment"))
             c.ClaimClosedDate = dataArr(i, ColIdx(hmap, "ClaimClosedDate"))
-            result.Add c, c.claimID
+            result.Add c, c.ClaimID
         Next i
     End If
 
@@ -265,11 +265,14 @@ Public Function AddClaimsBulk(claims As Collection, Optional ByRef skippedIDs As
     If lastRow >= 2 Then
         idArr = ws.Range(ws.Cells(2, ColIdx(hmap, "ClaimID")), _
                           ws.Cells(lastRow, ColIdx(hmap, "ClaimID"))).Value
+        ' LCase so "ABC123" and "abc123" are treated as the same claim -
+        ' this must match the check in modBulkImport.ValidateStaging, or
+        ' validation would flag a duplicate that the insert then allows.
         If lastRow = 2 Then
-            existing(Trim$(CStr(idArr))) = True
+            existing(Trim$(LCase$(CStr(idArr)))) = True
         Else
             For i = 1 To UBound(idArr, 1)
-                existing(Trim$(CStr(idArr(i, 1)))) = True
+                existing(Trim$(LCase$(CStr(idArr(i, 1))))) = True
             Next i
         End If
     End If
@@ -281,25 +284,39 @@ Public Function AddClaimsBulk(claims As Collection, Optional ByRef skippedIDs As
     skippedIDs = ""
 
     For Each c In claims
-        If existing.Exists(Trim$(c.claimID)) Then
-            skippedIDs = skippedIDs & IIf(skippedIDs = "", "", ", ") & c.claimID
+        If existing.Exists(Trim$(LCase$(c.ClaimID))) Then
+            skippedIDs = skippedIDs & IIf(skippedIDs = "", "", ", ") & c.ClaimID
         Else
             n = n + 1
-            outArr(n, ColIdx(hmap, "ClaimID")) = c.claimID
-            outArr(n, ColIdx(hmap, "ClaimSite")) = c.claimSite
+            outArr(n, ColIdx(hmap, "ClaimID")) = c.ClaimID
+            outArr(n, ColIdx(hmap, "ClaimSite")) = c.ClaimSite
             outArr(n, ColIdx(hmap, "ClaimProviderName")) = c.ClaimProviderName
-            outArr(n, ColIdx(hmap, "ClaimQuery")) = c.claimQuery
+            outArr(n, ColIdx(hmap, "ClaimQuery")) = c.ClaimQuery
             outArr(n, ColIdx(hmap, "ClaimCreationDate")) = c.ClaimCreationDate
             outArr(n, ColIdx(hmap, "ClaimStatus")) = STATUS_PENDING
             outArr(n, ColIdx(hmap, "Attempt")) = 0
-            outArr(n, ColIdx(hmap, "ClaimUpdatedSite")) = c.claimSite
+            outArr(n, ColIdx(hmap, "ClaimUpdatedSite")) = c.ClaimSite
             outArr(n, ColIdx(hmap, "ClaimInsertionDate")) = stamp
             outArr(n, ColIdx(hmap, "ClaimInsertedBy")) = userName
-            existing(Trim$(c.claimID)) = True ' guard against dupes within the batch itself
+            existing(Trim$(LCase$(c.ClaimID))) = True ' guard against dupes within the batch itself
         End If
     Next c
 
     If n > 0 Then
+        ' If any were skipped, outArr has unused trailing rows. Trim it to
+        ' exactly n rows so the array and the target range match exactly,
+        ' rather than relying on Excel silently taking the top-left block.
+        If n < claims.Count Then
+            Dim trimmed() As Variant, r As Long, k As Long
+            ReDim trimmed(1 To n, 1 To lastCol)
+            For r = 1 To n
+                For k = 1 To lastCol
+                    trimmed(r, k) = outArr(r, k)
+                Next k
+            Next r
+            outArr = trimmed
+        End If
+
         firstNewRow = lastRow + 1
         ' ONE write for the entire batch
         ws.Range(ws.Cells(firstNewRow, 1), ws.Cells(firstNewRow + n - 1, lastCol)).Value = outArr
@@ -313,6 +330,67 @@ Fail:
     MsgBox "Bulk insert failed: " & Err.Description, vbCritical
     If Not wb Is Nothing Then CloseCentralDB wb, False
     AddClaimsBulk = 0
+End Function
+
+' ---------------------------------------------------------------------
+' Updates the user-supplied detail fields on an existing claim -
+' corrections to what was typed at insert time.
+'
+' Deliberately does NOT touch ClaimStatus, Attempt, ClaimClosedDate or
+' any history. Those are maintained by LogCallAndUpdateStatus so that
+' status, attempt count and the call trail can never drift apart. A
+' correction to a provider name is not a call and must not look like one.
+'
+' ClaimUpdatedSite is only changed when the current user is an Admin;
+' a non-admin's value for it is ignored rather than rejected, so the
+' rest of their corrections still save.
+' ---------------------------------------------------------------------
+Public Function UpdateClaimDetails(ByVal claimID As String, ByVal claimSite As String, _
+                                    ByVal providerName As String, ByVal claimQuery As String, _
+                                    ByVal creationDate As Date, _
+                                    Optional ByVal updatedSite As String = "", _
+                                    Optional ByRef siteChangeDenied As Boolean = False) As Boolean
+    Dim wb As Workbook, ws As Worksheet, claimRow As Long
+    Dim hmap As Object
+
+    On Error GoTo Fail
+    Set wb = OpenCentralDB()
+    Set ws = wb.Sheets(SHEET_CLAIMS)
+
+    claimRow = FindClaimRow(wb, claimID)
+    If claimRow = 0 Then
+        MsgBox "Claim ID '" & claimID & "' not found.", vbExclamation
+        CloseCentralDB wb, False
+        UpdateClaimDetails = False
+        Exit Function
+    End If
+
+    Set hmap = BuildHeaderMap(ws)
+
+    ws.Cells(claimRow, ColIdx(hmap, "ClaimSite")).Value = claimSite
+    ws.Cells(claimRow, ColIdx(hmap, "ClaimProviderName")).Value = providerName
+    ws.Cells(claimRow, ColIdx(hmap, "ClaimQuery")).Value = claimQuery
+    ws.Cells(claimRow, ColIdx(hmap, "ClaimCreationDate")).Value = creationDate
+
+    If Trim$(updatedSite) <> "" Then
+        If IsCurrentUserAdmin(wb) Then
+            ws.Cells(claimRow, ColIdx(hmap, "ClaimUpdatedSite")).Value = updatedSite
+        Else
+            siteChangeDenied = True
+        End If
+    End If
+
+    ws.Cells(claimRow, ColIdx(hmap, "LastUpdatedDate")).Value = Now
+    ws.Cells(claimRow, ColIdx(hmap, "LastUpdatedBy")).Value = GetWindowsUserName()
+
+    CloseCentralDB wb, True
+    UpdateClaimDetails = True
+    Exit Function
+
+Fail:
+    MsgBox "Could not update claim: " & Err.Description, vbCritical
+    If Not wb Is Nothing Then CloseCentralDB wb, False
+    UpdateClaimDetails = False
 End Function
 
 ' ---------------------------------------------------------------------
@@ -341,13 +419,13 @@ Public Function FindClaim(ByVal claimID As String) As clsClaim
     rowArr = ws.Range(ws.Cells(claimRow, 1), ws.Cells(claimRow, lastCol)).Value ' one row, one read
 
     Set c = New clsClaim
-    c.claimID = rowArr(1, ColIdx(hmap, "ClaimID"))
-    c.claimSite = rowArr(1, ColIdx(hmap, "ClaimSite"))
+    c.ClaimID = rowArr(1, ColIdx(hmap, "ClaimID"))
+    c.ClaimSite = rowArr(1, ColIdx(hmap, "ClaimSite"))
     c.ClaimProviderName = rowArr(1, ColIdx(hmap, "ClaimProviderName"))
-    c.claimQuery = rowArr(1, ColIdx(hmap, "ClaimQuery"))
+    c.ClaimQuery = rowArr(1, ColIdx(hmap, "ClaimQuery"))
     c.ClaimCreationDate = rowArr(1, ColIdx(hmap, "ClaimCreationDate"))
     c.ClaimStatus = rowArr(1, ColIdx(hmap, "ClaimStatus"))
-    c.attempt = rowArr(1, ColIdx(hmap, "Attempt"))
+    c.Attempt = rowArr(1, ColIdx(hmap, "Attempt"))
     c.ClaimUpdatedSite = rowArr(1, ColIdx(hmap, "ClaimUpdatedSite"))
     c.ClaimInsertionDate = rowArr(1, ColIdx(hmap, "ClaimInsertionDate"))
     c.ClaimInsertedBy = rowArr(1, ColIdx(hmap, "ClaimInsertedBy"))
@@ -394,7 +472,7 @@ Public Function GetHistory(ByVal claimID As String) As Collection
             If Trim$(CStr(dataArr(i, idColArr))) = target Then
                 Set h = New clsHistoryEntry
                 h.HistoryID = dataArr(i, ColIdx(hmap, "HistoryID"))
-                h.claimID = dataArr(i, idColArr)
+                h.ClaimID = dataArr(i, idColArr)
                 h.CallerName = dataArr(i, ColIdx(hmap, "CallerName"))
                 h.CallDateTime = dataArr(i, ColIdx(hmap, "CallDateTime"))
                 h.CallerComment = dataArr(i, ColIdx(hmap, "CallerComment"))
@@ -413,5 +491,3 @@ Fail:
     If Not wb Is Nothing Then CloseCentralDB wb, False
     Set GetHistory = New Collection
 End Function
-
-

@@ -185,6 +185,62 @@ Fail:
 End Function
 
 ' ---------------------------------------------------------------------
+' Updates the user-supplied detail fields on an existing claim -
+' corrections to what was typed at insert time.
+'
+' Deliberately does NOT touch ClaimStatus, Attempt, ClaimClosedDate or
+' any history. Those are maintained by LogCallAndUpdateStatus so that
+' status, attempt count and the call trail can never drift apart.
+' ---------------------------------------------------------------------
+Public Function UpdateClaimDetails(ByVal claimID As String, ByVal claimSite As String, _
+                                    ByVal providerName As String, ByVal claimQuery As String, _
+                                    ByVal creationDate As Date, _
+                                    Optional ByVal updatedSite As String = "", _
+                                    Optional ByRef siteChangeDenied As Boolean = False) As Boolean
+    Dim wb As Workbook, ws As Worksheet, claimRow As Long
+    Dim hmap As Object
+
+    On Error GoTo Fail
+    Set wb = OpenCentralDB()
+    Set ws = wb.Sheets(SHEET_CLAIMS)
+
+    claimRow = FindClaimRow(wb, claimID)
+    If claimRow = 0 Then
+        MsgBox "Claim ID '" & claimID & "' not found.", vbExclamation
+        CloseCentralDB wb, False
+        UpdateClaimDetails = False
+        Exit Function
+    End If
+
+    Set hmap = BuildHeaderMap(ws)
+
+    ws.Cells(claimRow, ColIdx(hmap, "ClaimSite")).Value = claimSite
+    ws.Cells(claimRow, ColIdx(hmap, "ClaimProviderName")).Value = providerName
+    ws.Cells(claimRow, ColIdx(hmap, "ClaimQuery")).Value = claimQuery
+    ws.Cells(claimRow, ColIdx(hmap, "ClaimCreationDate")).Value = creationDate
+
+    If Trim$(updatedSite) <> "" Then
+        If IsCurrentUserAdmin(wb) Then
+            ws.Cells(claimRow, ColIdx(hmap, "ClaimUpdatedSite")).Value = updatedSite
+        Else
+            siteChangeDenied = True
+        End If
+    End If
+
+    ws.Cells(claimRow, ColIdx(hmap, "LastUpdatedDate")).Value = Now
+    ws.Cells(claimRow, ColIdx(hmap, "LastUpdatedBy")).Value = GetWindowsUserName()
+
+    CloseCentralDB wb, True
+    UpdateClaimDetails = True
+    Exit Function
+
+Fail:
+    MsgBox "Could not update claim: " & Err.Description, vbCritical
+    If Not wb Is Nothing Then CloseCentralDB wb, False
+    UpdateClaimDetails = False
+End Function
+
+' ---------------------------------------------------------------------
 ' Read helpers for populating the UI / dashboards.
 ' Returns the full used range (headers included) so new columns
 ' automatically flow through - the consumer matches by header name.
