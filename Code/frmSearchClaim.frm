@@ -50,7 +50,7 @@ Private m_loading As Boolean     ' suppress Change events while populating
 Private Sub UserForm_Initialize()
     m_loading = True
 
-    Me.Caption = "CallTrail - Search & Edit Claim"
+    Me.caption = "CallTrail - Search & Edit Claim"
 
     With lstHistory
         .ColumnCount = 4
@@ -76,7 +76,7 @@ End Sub
 
 Private Sub DoSearch()
     
-    Dim repo As New ClsClaimRepository
+    Dim Repo As New ClsClaimRepository
     Dim idToFind As String
 
     idToFind = Trim$(txtSearchID.Value)
@@ -89,15 +89,15 @@ Private Sub DoSearch()
 
     On Error GoTo Fail
     Me.MousePointer = fmMousePointerHourGlass
-    lblStatusBar.Caption = "Searching..."
+    lblStatusBar.caption = "Searching..."
     DoEvents
 
-    Set m_claim = repo.FindClaim(idToFind)
+    Set m_claim = Repo.FindClaim(idToFind)
 
     If m_claim Is Nothing Then
         ClearAll
         Me.MousePointer = fmMousePointerDefault
-        lblStatusBar.Caption = "No claim found with ID '" & idToFind & "'."
+        lblStatusBar.caption = "No claim found with ID '" & idToFind & "'."
         Exit Sub
     End If
 
@@ -105,12 +105,12 @@ Private Sub DoSearch()
     LoadHistory m_claim.claimID
 
     Me.MousePointer = fmMousePointerDefault
-    lblStatusBar.Caption = "Claim loaded."
+    lblStatusBar.caption = "Claim loaded."
     Exit Sub
 
 Fail:
     Me.MousePointer = fmMousePointerDefault
-    lblStatusBar.Caption = "Search failed: " & Err.Description
+    lblStatusBar.caption = "Search failed: " & Err.Description
 End Sub
 
 ' =====================================================================
@@ -120,16 +120,16 @@ Private Sub PopulateForm(c As clsClaim)
     m_loading = True
 
     ' --- read-only identity / audit fields ---
-    lblClaimID.Caption = c.claimID
-    lblStatus.Caption = c.ClaimStatus
-    lblAttempt.Caption = CStr(c.attempt)
-    lblInsertedOn.Caption = Format$(c.ClaimInsertionDate, "dd-mmm-yyyy hh:nn")
-    lblInsertedBy.Caption = c.ClaimInsertedBy
-    lblLastUpdated.Caption = FormatDateOrBlank(c.LastUpdatedDate)
-    lblLastUpdatedBy.Caption = c.LastUpdatedBy
-    lblLastComment.Caption = c.LastComment
-    lblClosedOn.Caption = FormatDateOrBlank(c.ClaimClosedDate)
-    lblDaysOpen.Caption = CStr(c.DaysOpen) & IIf(c.IsClosed, " (to close)", " (open)")
+    lblClaimID.caption = c.claimID
+    lblStatus.caption = c.ClaimStatus
+    lblAttempt.caption = CStr(c.attempt)
+    lblInsertedOn.caption = Format$(c.ClaimInsertionDate, "dd-mmm-yyyy hh:nn")
+    lblInsertedBy.caption = c.ClaimInsertedBy
+    lblLastUpdated.caption = FormatDateOrBlank(c.LastUpdatedDate)
+    lblLastUpdatedBy.caption = c.LastUpdatedBy
+    lblLastComment.caption = c.LastComment
+    lblClosedOn.caption = FormatDateOrBlank(c.ClaimClosedDate)
+    lblDaysOpen.caption = CStr(c.DaysOpen) & IIf(c.IsClosed, " (to close)", " (open)")
 
     ' --- editable fields ---
     txtSite.Value = c.claimSite
@@ -164,22 +164,22 @@ Private Sub ApplyPermissions()
 End Sub
 
 Private Sub LoadHistory(ByVal claimID As String)
-    Dim repo As New ClsClaimRepository
+    Dim Repo As New ClsClaimRepository
     Dim histData As Variant
     Dim hist As Collection
 
     lstHistory.Clear
 
     On Error GoTo Fail
-    Set hist = repo.GetHistory(claimID)
+    Set hist = Repo.GetHistory(claimID)
     histData = HistoryToListArray(hist)
     If Not IsEmpty(histData) Then lstHistory.List = histData
 
-    lblHistoryCount.Caption = hist.Count & " call(s) logged"
+    lblHistoryCount.caption = hist.Count & " call(s) logged"
     Exit Sub
 
 Fail:
-    lblStatusBar.Caption = "Could not load history: " & Err.Description
+    lblStatusBar.caption = "Could not load history: " & Err.Description
 End Sub
 
 ' =====================================================================
@@ -210,11 +210,11 @@ Private Sub MarkDirty()
     If m_claim Is Nothing Then Exit Sub
     m_dirty = True
     cmdSave.enabled = True
-    lblStatusBar.Caption = "Unsaved changes."
+    lblStatusBar.caption = "Unsaved changes."
 End Sub
 
 Private Sub cmdSave_Click()
-    Dim repo As New ClsClaimRepository
+    Dim Repo As New ClsClaimRepository
     Dim siteDenied As Boolean
     Dim creationDate As Date
 
@@ -251,7 +251,7 @@ Private Sub cmdSave_Click()
     On Error GoTo Fail
     Me.MousePointer = fmMousePointerHourGlass
 
-    If repo.UpdateClaimDetails(m_claim.claimID, _
+    If Repo.UpdateClaimDetails(m_claim.claimID, _
                                 Trim$(txtSite.Value), _
                                 Trim$(txtProvider.Value), _
                                 Trim$(txtQuery.Value), _
@@ -262,15 +262,15 @@ Private Sub cmdSave_Click()
         ' Reload from the database rather than trusting the form's copy,
         ' so the audit fields shown (LastUpdated etc.) are what was
         ' actually written.
-        Set m_claim = repo.FindClaim(m_claim.claimID)
+        Set m_claim = Repo.FindClaim(m_claim.claimID)
         If Not m_claim Is Nothing Then PopulateForm m_claim
 
         Me.MousePointer = fmMousePointerDefault
-        lblStatusBar.Caption = "Changes saved." & _
+        lblStatusBar.caption = "Changes saved." & _
             IIf(siteDenied, " (Updated Site not changed - Admin only.)", "")
     Else
         Me.MousePointer = fmMousePointerDefault
-        lblStatusBar.Caption = "Save failed."
+        lblStatusBar.caption = "Save failed."
     End If
     Exit Sub
 
@@ -281,7 +281,7 @@ End Sub
 
 ' Throws away edits and re-reads the claim from the database
 Private Sub cmdRevert_Click()
-    Dim repo As New ClsClaimRepository
+    Dim Repo As New ClsClaimRepository
 
     If m_claim Is Nothing Then Exit Sub
     If Not m_dirty Then Exit Sub
@@ -289,15 +289,15 @@ Private Sub cmdRevert_Click()
     If MsgBox("Discard your unsaved changes to this claim?", _
               vbYesNo + vbQuestion, "Discard Changes") = vbNo Then Exit Sub
 
-    Set m_claim = repo.FindClaim(m_claim.claimID)
+    Set m_claim = Repo.FindClaim(m_claim.claimID)
     If m_claim Is Nothing Then
         ClearAll
-        lblStatusBar.Caption = "This claim no longer exists in the database."
+        lblStatusBar.caption = "This claim no longer exists in the database."
         Exit Sub
     End If
 
     PopulateForm m_claim
-    lblStatusBar.Caption = "Changes discarded."
+    lblStatusBar.caption = "Changes discarded."
 End Sub
 
 Private Sub cmdClose_Click()
@@ -333,17 +333,17 @@ Private Sub ClearAll()
     Set m_claim = Nothing
     m_dirty = False
 
-    lblClaimID.Caption = ""
-    lblStatus.Caption = ""
-    lblAttempt.Caption = ""
-    lblInsertedOn.Caption = ""
-    lblInsertedBy.Caption = ""
-    lblLastUpdated.Caption = ""
-    lblLastUpdatedBy.Caption = ""
-    lblLastComment.Caption = ""
-    lblClosedOn.Caption = ""
-    lblDaysOpen.Caption = ""
-    lblHistoryCount.Caption = ""
+    lblClaimID.caption = ""
+    lblStatus.caption = ""
+    lblAttempt.caption = ""
+    lblInsertedOn.caption = ""
+    lblInsertedBy.caption = ""
+    lblLastUpdated.caption = ""
+    lblLastUpdatedBy.caption = ""
+    lblLastComment.caption = ""
+    lblClosedOn.caption = ""
+    lblDaysOpen.caption = ""
+    lblHistoryCount.caption = ""
 
     txtSite.Value = ""
     txtProvider.Value = ""

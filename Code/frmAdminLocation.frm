@@ -16,7 +16,7 @@ Attribute VB_Exposed = False
 Option Explicit
 
 Private Sub cmdUpdate_Click()
-    If ChangeUpdatedSite(Trim(txtClaimId.Value), Trim(txtNewSite.Value)) Then
+    If ChangeUpdatedSite(Trim(txtClaimID.Value), Trim(txtNewSite.Value)) Then
         MsgBox "Site updated.", vbInformation
         Unload Me
     End If

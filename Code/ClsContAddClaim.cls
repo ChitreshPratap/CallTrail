@@ -29,7 +29,7 @@ Public Sub cmdSave_Click(var_frm As UserFormMain)
     Dim frm As UserFormMain
     Set frm = var_frm
         
-    tClaimId = Trim(frm.txtClaimId.Value)
+    tClaimId = Trim(frm.txtClaimID.Value)
     tClaimSite = Trim(frm.txtClaimSite.Value)
     tProviderName = Trim(frm.txtProviderName.Value)
     tClaimQuery = Trim(frm.txtClaimQuery.Value)
@@ -81,7 +81,7 @@ End Sub
 
 Public Sub resetAddClaim(var_frm As UserFormMain)
         
-    var_frm.txtClaimId.Value = ""
+    var_frm.txtClaimID.Value = ""
     var_frm.txtClaimSite.Value = ""
     var_frm.txtProviderName.Value = ""
     var_frm.txtClaimQuery.Value = ""

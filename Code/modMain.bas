@@ -9,18 +9,32 @@ Option Explicit
 ' modDataAccess or modUtils.
 ' =====================================================================
 
-'Public Sub reloadAddin()
-'    AddIns("RibbonAddins").Installed = False: AddIns("RibbonAddins").Installed = True
+' PRIMARY ENTRY POINT - the tabbed application shell.
+' Wire your main button to this.
+' =====================================================================
+Public Sub ShowApp()
+    UserFormMain.Show
+End Sub
+
+
+' ---------------------------------------------------------------------
+' The individual entry points below still work and are kept deliberately:
+' they let you wire a button straight to one screen, and they are what
+' you would use if you ever want a single-purpose shortcut without the
+' whole shell. The tabbed app does not depend on them.
+' ---------------------------------------------------------------------
+
+'Public Sub ShowAddClaimForm()
+'    frmAddClaim.Show
 'End Sub
-'
-'Public Sub btnAddManualClaim()
-'    ShowAddClaimForm
-'End Sub
-'
-'Public Sub btnAddBulkClaim()
-'    MsgBox "Bulk claim add called", vbOKOnly
-'End Sub
-'
+
+' Search ONE claim: full detail, read-only call history, and editable
+' detail fields for corrections
+Public Sub ShowSearchClaim()
+    frmSearchClaim.Show
+End Sub
+
+
 
 'Show the form to add claim manually
 Public Sub ShowAddClaimForm()
@@ -47,13 +61,13 @@ Public Sub ShowUpdateClaimForm()
     frmUpdateClaim.Show
 End Sub
 
-' Search ONE claim: full detail, read-only call history, and editable
-' detail fields for corrections
-Public Sub ShowSearchClaim()
-
-    frmSearchClaim.Show
-    
-End Sub
+'' Search ONE claim: full detail, read-only call history, and editable
+'' detail fields for corrections
+'Public Sub ShowSearchClaim()
+'
+'    frmSearchClaim.Show
+'
+'End Sub
 
 Public Sub ShowAdminSiteForm()
     Dim wb As Workbook

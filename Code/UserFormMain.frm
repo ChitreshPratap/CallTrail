@@ -4,8 +4,9 @@ Begin {C62A69F0-16DC-11CE-9E98-00AA00574A4F} UserFormMain
    ClientHeight    =   10095
    ClientLeft      =   120
    ClientTop       =   465
-   ClientWidth     =   16185
+   ClientWidth     =   17355
    OleObjectBlob   =   "UserFormMain.frx":0000
+   ShowModal       =   0   'False
    StartUpPosition =   1  'CenterOwner
 End
 Attribute VB_Name = "UserFormMain"
@@ -13,6 +14,23 @@ Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
+' frmMain - code-behind for the tabbed shell
+'
+' Paste ALL of this into the code module of a UserForm named frmMain.
+' See Setup Guide section 7 for the control layout.
+'
+' This module is deliberately THIN. It owns the MultiPage, the status
+' bar and the page registry - nothing else. All actual behaviour lives
+' in the clsPage* controllers, which is what makes adding a sixth tab a
+' matter of writing one class and adding one line to RegisterPages.
+' =====================================================================
+Option Explicit
+
+Private m_ctx As clsAppContext
+Private m_pages As Collection        ' IPage controllers, in tab order
+Private m_initialised As Boolean
+
+
 Public btnStyleCollection As New Collection
 Public collection_navigationButton As New Collection
 Public buttonHome As tsLabelHE
@@ -26,17 +44,19 @@ Public contAddClaim As ClsContAddClaim
 
 Dim var_viewClaimsTab As ClsViewClaims
 
+
+
 Private Sub cmdCancel_Click()
     
     contAddClaim.cmdCancel_Click Me
 
 End Sub
 
-Private Sub cmdClose_Click()
-
-    Me.frameFilterViewClaims.Visible = False
-
-End Sub
+'Private Sub cmdClose_Click()
+'
+'    Me.frameFilterViewClaims.Visible = False
+'
+'End Sub
 
 Private Sub cmdReset_Click()
     
@@ -66,10 +86,30 @@ Private Sub Frame1_Exit(ByVal Cancel As MSForms.ReturnBoolean)
     MsgBox "Exited"
 End Sub
 
+
+
+Private Sub cmdAddSave_Click()
+    
+End Sub
+
+
+
+Private Sub cmdViewClose_Click()
+    Me.frameFilterViewClaims.Visible = False
+End Sub
+
 Private Sub frameDashboard_Click()
 
 End Sub
 
+
+Private Sub frameMain_Click()
+
+End Sub
+
+Private Sub framePageViewRecords_Click()
+
+End Sub
 
 Private Sub lblBtnApplyFilters_Click()
     Me.frameFilterViewClaims.Visible = True
@@ -83,39 +123,39 @@ Private Sub lblCloseDashboard_Click()
         DoEvents
         i = i - 1
     Loop
-    Me.frameDashboard.Width = 0
-    Me.frameMain.Left = Me.frameDashboard.Width
+    Me.frameDashboard.width = 0
+    Me.frameMain.Left = Me.frameDashboard.width
     Me.lblShowDashboard.Visible = True
-    Me.frameMain.Width = mainWindowWidth - i
+    Me.frameMain.width = mainWindowWidth - i
 '    Me.Painel_Principal.Width = Me.Width - Me.Painel_Lateral.Width
     
     With lblAppHeader
         .Left = 30
-        .Width = mainWindowWidth - 30
+        .width = mainWindowWidth - 30
     End With
     
     With lblAppHeaderLine
         .Left = 0
-        .Width = mainWindowWidth
+        .width = mainWindowWidth
     End With
     
     With multiPageApp
         .Left = Me.frameMain.Left
-        .Width = mainWindowWidth
+        .width = mainWindowWidth
     End With
     With framePageAbout
         .Left = Me.frameMain.Left
-        .Width = mainWindowWidth
+        .width = mainWindowWidth
     End With
     
     With framePageProcess
         .Left = Me.frameMain.Left
-        .Width = mainWindowWidth
+        .width = mainWindowWidth
     End With
     
     With framePageHome
         .Left = Me.frameMain.Left
-        .Width = mainWindowWidth
+        .width = mainWindowWidth
     End With
     
 
@@ -132,11 +172,23 @@ Private Sub lblHome_Click()
 End Sub
 
 Private Sub lblMenuItemAddClaim_Click()
-    Me.multiPageApp.Value = 1
+    Me.multiPageApp.Value = 0
+End Sub
+
+Private Sub lblMenuItemAdmin_Click()
+    Me.multiPageApp.Value = 3
+End Sub
+
+Private Sub lblMenuItemLogCall_Click()
+    Me.multiPageApp.Value = 2
+End Sub
+
+Private Sub lblMenuItemSearch_Click()
+    Me.multiPageApp.Value = 4
 End Sub
 
 Private Sub lblMenuItemViewClaims_Click()
-    Me.multiPageApp.Value = 3
+    Me.multiPageApp.Value = 1
 End Sub
 
 Private Sub lblShowDashboard_Click()
@@ -144,8 +196,8 @@ Private Sub lblShowDashboard_Click()
     For i = 0 To 300
         DoEvents
     Next
-    Me.frameDashboard.Width = 170
-    Me.frameMain.Left = Me.frameDashboard.Width
+    Me.frameDashboard.width = 170
+    Me.frameMain.Left = Me.frameDashboard.width
     Me.lblShowDashboard.Visible = False
     Me.lblAppHeader.Left = 10
 
@@ -153,49 +205,280 @@ Private Sub lblShowDashboard_Click()
 End Sub
 
 
-Private Sub lstClaims_Click()
-
-    var_viewClaimsTab.()
-    
-End Sub
-
 Private Sub UserForm_Initialize()
         
+    On Error GoTo Fail
+    Set m_ctx = New clsAppContext
+    m_ctx.SetStatusSink Me
+    
+    ' Shell FIRST, so the MultiPage is at its final size before any page
+    ' arranges itself inside it. Pages that size controls against the
+    ' page width would otherwise lay out against the designer's size.
+    ' ArrangeShell also calibrates the UI scale and stores it on the
+    ' context for the tabs to reuse.
+    ArrangeShell
+    
+    RegisterPages
+    
+    ApplyTabVisibility
+    
+    m_initialised = True
+    
+    ' Activate the first visible tab so it populates immediately
+    Me.multiPageApp.Value = FirstVisiblePageIndex()
+     'MultiPage.Value = FirstVisiblePageIndex()
+     
+    ActivateCurrentPage
+    
+    Exit Sub
+
     Set contAddClaim = New ClsContAddClaim
     'contAddClaim.setForm Me
     
-    Me.Caption = AppUtil.getAppName
+            
+    
+    
+    With framePageHome
+        .width = frameMain.width
+        .BackColor = VarnahUtil.getFadeColor(AppUtil.getThemeColor(), 0.9)
+        .Left = 0
+        .Top = 0
+        .height = mainWindowHeight - lblCloseDashboard.height - lblCloseDashboard.Top
+    End With
+    
+    With framePageAbout
+        .width = frameMain.width
+        .BackColor = VarnahUtil.getFadeColor(AppUtil.getThemeColor(), 0.9)
+        .Left = 0
+        .Top = 0
+        .height = mainWindowHeight - lblCloseDashboard.height - lblCloseDashboard.Top
+    End With
+    
+    With framePageAddRecord
+        .width = frameMain.width
+        .BackColor = VarnahUtil.getFadeColor(AppUtil.getThemeColor(), 0.9)
+        .Left = 0
+        .Top = 0
+        .height = mainWindowHeight - lblCloseDashboard.height - lblCloseDashboard.Top
+    End With
+    
+    
+    multiPageApp.Value = 0
+            
+        
+'    Set var_viewClaimsTab = New ClsViewClaims
+'    Set var_viewClaimsTab.setForm = Me
+'    var_viewClaimsTab.initialize_viewClaimsTab
+    
+    
+Fail:
+    MsgBox "The application could not start:" & vbCrLf & vbCrLf & Err.Description, _
+           vbCritical, "Startup Error"
+           
+           
+End Sub
+
+Sub setPage(pageNumber As Integer)
+
+    Me.multiPageApp.Value = pageNumber
+    
+End Sub
+
+
+
+
+
+
+
+
+
+'=======================================
+
+' ---------------------------------------------------------------------
+' The page registry. To add a tab:
+'   1. Add a Page to MultiPage1 in the designer, with its controls
+'   2. Write a clsPageXxx class that Implements IPage
+'   3. Add ONE AddPage line here, in the same order as the tabs
+' Nothing else in the app changes.
+' ---------------------------------------------------------------------
+Private Sub RegisterPages()
+    Set m_pages = New Collection
+ 
+    'AddPage New clsPageLogCall, MultiPage1.Pages("pgLogCall")
+    'AddPage New clsPageSearch, MultiPage1.Pages("pgSearch")
+    'AddPage New ClsPageHome, multiPageApp.Pages("pageHome")
+    AddPage New clsPageAddRecord, multiPageApp.Pages("pageAddRecord")
+    AddPage New ClsPageViewRecords, multiPageApp.Pages("pageViewRecords")
+    AddPage New ClsPageLogCall, multiPageApp.Pages("pageLogCall")
+    AddPage New clsPageAdmin, multiPageApp.Pages("pageAdmin")
+    AddPage New ClsPageSearch, multiPageApp.Pages("pageSearch")
+    
+    'AddPage New clsPageAdmin, MultiPage1.Pages("pgAdmin")
+End Sub
+ 
+Private Sub AddPage(ctrl As IPage, pg As MSForms.Page)
+    
+    On Error GoTo Fail
+    ctrl.InitPage m_ctx, pg
+    pg.caption = ctrl.pageTitle
+    m_pages.Add ctrl
+    Exit Sub
+ 
+Fail:
+    ' Name the failing tab rather than letting a generic control error
+    ' bubble up from a form with 150 controls on it.
+    Err.Raise Err.Number, "AddPage", _
+        "Tab '" & ctrl.pageTitle & "' failed to initialise:" & vbCrLf & Err.Description
+End Sub
+ 
+' The Admin tab is hidden for non-admins. This is convenience only -
+' every admin action re-checks the role in the data layer, because
+' anyone who can open the VBE could unhide this.
+Private Sub ApplyTabVisibility()
+    
+    On Error Resume Next
+    multiPageApp.Pages("pageAdmin").Visible = m_ctx.isAdmin
+    On Error GoTo 0
+
+End Sub
+ 
+Private Function FirstVisiblePageIndex() As Long
+    
+    Dim i As Long
+    For i = 0 To multiPageApp.Pages.Count - 1
+        If multiPageApp.Pages(i).Visible Then
+            FirstVisiblePageIndex = i
+            Exit Function
+        End If
+    Next i
+
+End Function
+ 
+' =====================================================================
+' Tab switching
+' =====================================================================
+'Private Sub MultiPage1_Change()
+Private Sub multiPageApp_Change()
+    
+    If Not m_initialised Then Exit Sub
+    ActivateCurrentPage
+
+End Sub
+ 
+' Each controller refreshes itself here, on the tab the user actually
+' opened. Nothing reloads speculatively - and because the claim cache is
+' shared in clsAppContext, switching tabs doesn't re-read the shared file
+' unless something invalidated it.
+Private Sub ActivateCurrentPage()
+    
+    Dim idx As Long
+    Dim ctrl As IPage
+ 
+    idx = multiPageApp.Value
+    If idx < 0 Then Exit Sub
+    If idx + 1 > m_pages.Count Then Exit Sub
+ 
+    On Error GoTo Fail
+    Set ctrl = m_pages(idx + 1)      ' MultiPage 0-based, Collection 1-based
+    ctrl.OnActivate
+    Exit Sub
+ 
+Fail:
+    ShowStatus "Could not load this tab: " & Err.Description
+End Sub
+ 
+' =====================================================================
+' Status bar - clsAppContext calls this through its status sink, so
+' controllers post messages without knowing a form exists.
+' =====================================================================
+Public Sub ShowStatus(ByVal msg As String)
+    
+    On Error Resume Next
+    lblStatusBar.caption = msg
+    DoEvents
+    On Error GoTo 0
+
+End Sub
+ 
+' =====================================================================
+' Closing
+' =====================================================================
+Private Sub cmdClose_Click()
+    
+    Unload Me
+
+End Sub
+ 
+Private Sub UserForm_QueryClose(Cancel As Integer, CloseMode As Integer)
+    
+    Dim ctrl As IPage
+    Dim srch As ClsPageSearch
+ 
+    ' The Search tab is the only one holding unsaved edits, so ask before
+    ' throwing them away.
+    On Error Resume Next
+    For Each ctrl In m_pages
+        If TypeOf ctrl Is ClsPageSearch Then
+            Set srch = ctrl
+            If Not srch.ConfirmDiscardIfDirty() Then
+                Cancel = True
+                Exit Sub
+            End If
+        End If
+    Next ctrl
+    On Error GoTo 0
+
+End Sub
+ 
+Private Sub UserForm_Terminate()
+
+    Set m_pages = Nothing
+    Set m_ctx = Nothing
+    
+End Sub
+ 
+
+' =====================================================================
+' THE SHELL DESIGN - size of the window and where the three top-level
+' controls sit. Everything else lives inside a tab and is arranged by
+' that tab's own controller.
+' =====================================================================
+Private Sub ArrangeShell()
+    
+    
+    Me.caption = AppUtil.getAppName
+    
     Me.StartUpPosition = 0
+    Me.width = Application.UsableWidth * 0.98
+    Me.height = Application.height * 0.98
     
-    Me.Width = Application.UsableWidth * 0.9
-    Me.Height = Application.Height * 0.9
     
-    mainWindowHeight = Me.Height - 30
-    mainWindowWidth = Me.Width - 10
+    mainWindowHeight = Me.height - 30
+    mainWindowWidth = Me.width - 10
+    
+    With frameDashboard
+        .width = 170
+        .Left = 0
+        .Top = 0
+        .height = mainWindowHeight
+        .ZOrder (1)
+        .BackColor = VarnahUtil.getFadeColor(AppUtil.getThemeColor(), 0.05)
+        .BorderColor = VarnahUtil.getFadeColor(AppUtil.getThemeColor(), 0.05)
+        
+    End With
     
     With frameMain
         '.Picture = LoadPicture(ThisWorkbook.Path & "\panelPrinciple.jpg")
         .PictureSizeMode = fmPictureSizeModeStretch
-        .Height = mainWindowHeight
-        .Width = mainWindowWidth - Me.frameDashboard.Width
-        .Left = Me.frameDashboard.Width
+        .height = mainWindowHeight
+        .width = mainWindowWidth - Me.frameDashboard.width
+        .Left = Me.frameDashboard.width
         .Top = 0
         .ZOrder (1)
         .BackColor = AppUtil.getThemeColor()
         
     End With
     
-    With frameDashboard
-        .Width = 170
-        .Left = 0
-        .Top = 0
-        .Height = mainWindowHeight
-        .ZOrder (1)
-        .BackColor = VarnahUtil.getFadeColor(AppUtil.getThemeColor(), 0.05)
-        .BorderColor = VarnahUtil.getFadeColor(AppUtil.getThemeColor(), 0.05)
-        
-    End With
-            
     With lblHome
         .BackColor = VarnahUtil.getFadeColor(AppUtil.getThemeColor(), -0.4)
         .ForeColor = VarnahUtil.getFadeColor(AppUtil.getThemeColor(), 0.8)
@@ -206,152 +489,64 @@ Private Sub UserForm_Initialize()
         .ForeColor = VarnahUtil.getFadeColor(AppUtil.getThemeColor(), 0.8)
     End With
     
-    With lblAbout
-        .BackColor = VarnahUtil.getFadeColor(AppUtil.getThemeColor(), -0.4)
-        .ForeColor = VarnahUtil.getFadeColor(AppUtil.getThemeColor(), 0.8)
-    
-    End With
-    
     With lblMenuItemViewClaims
         .BackColor = VarnahUtil.getFadeColor(AppUtil.getThemeColor(), -0.4)
         .ForeColor = VarnahUtil.getFadeColor(AppUtil.getThemeColor(), 0.8)
     
     End With
     
+    With lblMenuItemLogCall
+        .BackColor = VarnahUtil.getFadeColor(AppUtil.getThemeColor(), -0.4)
+        .ForeColor = VarnahUtil.getFadeColor(AppUtil.getThemeColor(), 0.8)
+    
+    End With
+    
+    With lblMenuItemSearch
+        .BackColor = VarnahUtil.getFadeColor(AppUtil.getThemeColor(), -0.4)
+        .ForeColor = VarnahUtil.getFadeColor(AppUtil.getThemeColor(), 0.8)
+    
+    End With
+    
+    With lblAbout
+        .BackColor = VarnahUtil.getFadeColor(AppUtil.getThemeColor(), -0.4)
+        .ForeColor = VarnahUtil.getFadeColor(AppUtil.getThemeColor(), 0.8)
+    
+    End With
+        
     With lblAppHeader
-        .Width = frameMain.Width
+        .width = frameMain.width
         .Left = 10
         .Top = 5
-        .Height = 50
+        .height = 50
         .BackColor = AppUtil.getThemeColor()
         .ForeColor = vbWhite
-        .Caption = AppUtil.getAppName()
+        .caption = AppUtil.getAppName()
     End With
     
     With lblAppHeaderLine
-        .Width = frameMain.Width
+        .width = frameMain.width
         .Left = 0
-        .Top = lblAppHeader.Top + lblAppHeader.Height
-        .Height = 1.5
+        .Top = lblAppHeader.Top + lblAppHeader.height
+        .height = 1.5
         .BackColor = VarnahUtil.getFadeColor(AppUtil.getThemeColor(), 0.8)
     End With
     
     With multiPageApp
         .Style = fmTabStyleNone
-        .Width = frameMain.Width
+        .width = frameMain.width
         .Left = 0
-        .Top = lblCloseDashboard.Height + lblCloseDashboard.Top + 30
-        .Height = mainWindowHeight - lblCloseDashboard.Height - lblCloseDashboard.Top
-    End With
-    
-    With framePageHome
-        .Width = frameMain.Width
-        .BackColor = VarnahUtil.getFadeColor(AppUtil.getThemeColor(), 0.9)
-        .Left = 0
-        .Top = 0
-        .Height = mainWindowHeight - lblCloseDashboard.Height - lblCloseDashboard.Top
-    End With
-    
-    With framePageAbout
-        .Width = frameMain.Width
-        .BackColor = VarnahUtil.getFadeColor(AppUtil.getThemeColor(), 0.9)
-        .Left = 0
-        .Top = 0
-        .Height = mainWindowHeight - lblCloseDashboard.Height - lblCloseDashboard.Top
-    End With
-    
-    With framePageProcess
-        .Width = frameMain.Width
-        .BackColor = VarnahUtil.getFadeColor(AppUtil.getThemeColor(), 0.9)
-        .Left = 0
-        .Top = 0
-        .Height = mainWindowHeight - lblCloseDashboard.Height - lblCloseDashboard.Top
-    End With
-    
-    With framePageViewClaims
-        .Width = frameMain.Width
-        .BackColor = VarnahUtil.getFadeColor(AppUtil.getThemeColor(), 0.9)
-        .Left = 0
-        .Top = 0
-        .Height = mainWindowHeight - lblCloseDashboard.Height - lblCloseDashboard.Top
-        
-        Me.frameFilterViewClaims.Left = .Width - Me.frameFilterViewClaims.Width
-        Me.frameFilterViewClaims.Height = .Height
-        Me.frameFilterViewClaims.Top = -2
-        
+        .Top = lblAppHeaderLine.Top + lblAppHeaderLine.height
+        .height = mainWindowHeight - .Top - 50
+        .BackColor = vbYellow
         
     End With
     
-    multiPageApp.Value = 0
-            
- '   txtBoxStyleCollection.Add Styler.getStyledBox(textBoxName, "Enter Name")
-'    txtBoxStyleCollection.Add Styler.getStyledBox(textBoxDOB, "Select DOB")
     
-    
-    'Style Page Add Claim
-    txtBoxStyleCollection.Add Styler.getStyledBoxULine(Me.txtClaimId, "Claim Id*")
-    txtBoxStyleCollection.Add Styler.getStyledBoxULine(Me.txtClaimSite, "Claim Site*")
-    txtBoxStyleCollection.Add Styler.getStyledBoxULine(Me.txtProviderName, "Provider Name*")
-    txtBoxStyleCollection.Add Styler.getStyledBoxULine(Me.dtCreationDate, "Creation Date*")
-    Set tbStyle2 = New TsTextFieldStyle2
-    tbStyle2.init Me.txtClaimQuery, "Claim Query (Required) "
-    
-      
-    'Styling Navigation Pane
     collection_navigationButton.Add Styler.getStyledButtonNavigationBar(lblHome)
     collection_navigationButton.Add Styler.getStyledButtonNavigationBar(lblMenuItemAddClaim)
     collection_navigationButton.Add Styler.getStyledButtonNavigationBar(lblAbout)
     collection_navigationButton.Add Styler.getStyledButtonNavigationBar(lblMenuItemViewClaims)
-    
-'    Set buttonHome = New tsLabelHE
-'    buttonHome.setMukhLabel lblHome
-'    buttonHome.setIncDecInFont 4
-'    buttonHome.setOnHoverBackColor VarnahUtil.getFadeColor(AppUtil.getThemeColor(), 0.8)
-'    buttonHome.setOnHoverForeColor VarnahUtil.getFadeColor(AppUtil.getThemeColor(), -0.4)
-    
-    
-'        .BackColor = VarnahUtil.getFadeColor(AppUtil.getThemeColor(), -0.4)
-'        .ForeColor = VarnahUtil.getFadeColor(AppUtil.getThemeColor(), 0.8)
-    
-    
-'    Set buttonProcessing = New tsLabelHE
-'    buttonProcessing.setMukhLabel lblMenuItemAddClaim
-'    buttonProcessing.setIncDecInFont 4
-'    'buttonProcessing.setOnHoverForeColor (400)
-'
-'
-'    Set buttonAboutUs = New tsLabelHE
-'    buttonAboutUs.setMukhLabel lblMenuItemViewClaims
-'    buttonAboutUs.setIncDecInFont 4
-'    'buttonAboutUs.setOnHoverBackColor (1000)
-''    buttonAboutUs.setOnHoverForeColor = ""
-    
-    'buttonAboutUs.init lblAbout
-    'btnStyleCollection.Add Styler.getStyleButton(btnSelectDate)
-            
-'    Dim lblF As Variant
-'    Set lblF = lblAbout.Font
-'    lblF.Size = 24
-'    textBoxName.Font = lblF
-'    Debug.Print "Hello"
-    
-    'frameFilterViewClaims.Visible = Not (frameFilterViewClaims.Visible)
-    
-    
-    'Initializing tab - 'View Claim'
-'    Me.initialize_viewClaimsTab
-    
-    Set var_viewClaimsTab = New ClsViewClaims
-    Set var_viewClaimsTab.setForm = Me
-    var_viewClaimsTab.initialize_viewClaimsTab
-    
-    
+        
 End Sub
-
-Sub setPage(pageNumber As Integer)
-
-    Me.multiPageApp.Value = pageNumber
-    
-End Sub
-
+ 
 

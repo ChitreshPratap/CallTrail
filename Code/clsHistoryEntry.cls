@@ -14,21 +14,21 @@ Option Explicit
 ' One row of the History sheet as an object - a single logged call.
 ' =====================================================================
 
-Private pHistoryID As Long
+Private pHistoryId As Long
 Private pClaimID As String
 Private pCallerName As String
 Private pCallDateTime As Date
 Private pCallerComment As String
 Private pCallerStatus As String
 
-Public Property Get HistoryID() As Long: HistoryID = pHistoryID: End Property
-Public Property Let HistoryID(ByVal v As Long): pHistoryID = v: End Property
+Public Property Get historyId() As Long: historyId = pHistoryId: End Property
+Public Property Let historyId(ByVal v As Long): pHistoryId = v: End Property
 
 Public Property Get claimID() As String: claimID = pClaimID: End Property
 Public Property Let claimID(ByVal v As String): pClaimID = v: End Property
 
-Public Property Get CallerName() As String: CallerName = pCallerName: End Property
-Public Property Let CallerName(ByVal v As String): pCallerName = v: End Property
+Public Property Get callerName() As String: callerName = pCallerName: End Property
+Public Property Let callerName(ByVal v As String): pCallerName = v: End Property
 
 Public Property Get CallDateTime() As Date: CallDateTime = pCallDateTime: End Property
 Public Property Let CallDateTime(ByVal v As Date): pCallDateTime = v: End Property

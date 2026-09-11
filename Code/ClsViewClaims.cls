@@ -80,16 +80,16 @@ Public Sub LoadClaimsFromDatabase()
     Dim uform As UserFormMain
     Set uform = var_frm
     
-    Dim repo As ClsClaimRepository
-    Set repo = New ClsClaimRepository
+    Dim Repo As ClsClaimRepository
+    Set Repo = New ClsClaimRepository
 
     On Error GoTo Fail
     'Me.MousePointer = fmMousePointerHourGlass
     uform.MousePointer = fmMousePointerHourGlass
-    uform.lblStatusBar.Caption = "Loading claims..."
+    uform.lblStatusBar.caption = "Loading claims..."
     DoEvents
 
-    Set var_m_allClaims = repo.GetAllClaims()
+    Set var_m_allClaims = Repo.GetAllClaims()
 
     uform.MousePointer = fmMousePointerDefault
     Exit Sub
@@ -97,7 +97,7 @@ Public Sub LoadClaimsFromDatabase()
 Fail:
     uform.MousePointer = fmMousePointerDefault
     Set var_m_allClaims = New Collection
-    uform.lblStatusBar.Caption = "Could not load claims: " & Err.Description
+    uform.lblStatusBar.caption = "Could not load claims: " & Err.Description
 End Sub
 
 
@@ -123,9 +123,9 @@ Private Sub ApplyFilters()
     ' who typed a date and sees it quietly do nothing assumes the filter
     ' is broken.
     If Trim$(uform.txtDateFrom.Value) <> "" And dFrom = 0 Then
-        uform.lblStatusBar.Caption = "'From' date not recognised - ignoring it."
+        uform.lblStatusBar.caption = "'From' date not recognised - ignoring it."
     ElseIf Trim$(uform.txtDateTo.Value) <> "" And dTo = 0 Then
-        uform.lblStatusBar.Caption = "'To' date not recognised - ignoring it."
+        uform.lblStatusBar.caption = "'To' date not recognised - ignoring it."
     End If
 
     If dFrom > 0 And dTo > 0 And dFrom > dTo Then
@@ -145,23 +145,23 @@ Private Sub ApplyFilters()
     shownCount = var_m_shownClaims.Count
 
     If shownCount = 0 Then
-        uform.lblStatusBar.Caption = "No claims match the current filter."
-        uform.lblCount.Caption = "0 of " & var_m_allClaims.Count
+        uform.lblStatusBar.caption = "No claims match the current filter."
+        uform.lblCount.caption = "0 of " & var_m_allClaims.Count
         Exit Sub
     End If
 
     If shownCount > MAX_LIST_ROWS Then
-        uform.lblStatusBar.Caption = shownCount & " matches - too many to display. " & _
+        uform.lblStatusBar.caption = shownCount & " matches - too many to display. " & _
                                "Showing the first " & MAX_LIST_ROWS & "; narrow the filter to see the rest."
         Set var_m_shownClaims = TakeFirst(var_m_shownClaims, MAX_LIST_ROWS)
     Else
-        uform.lblStatusBar.Caption = "Ready."
+        uform.lblStatusBar.caption = "Ready."
     End If
 
     listData = ClaimsToListArray(var_m_shownClaims)
     If Not IsEmpty(listData) Then uform.lstClaims.List = listData   ' single assignment
         
-    uform.lblCount.Caption = var_m_shownClaims.Count & " of " & var_m_allClaims.Count
+    uform.lblCount.caption = var_m_shownClaims.Count & " of " & var_m_allClaims.Count
     
     
     Dim myHeaders As Variant
@@ -188,15 +188,15 @@ Private Function SelectedDateField() As ClaimDateField
     
 End Function
 
-Private Function TakeFirst(Source As Collection, ByVal n As Long) As Collection
+Private Function TakeFirst(source As Collection, ByVal n As Long) As Collection
     Dim result As New Collection
     Dim i As Long, limit As Long
 
     limit = n
-    If Source.Count < limit Then limit = Source.Count
+    If source.Count < limit Then limit = source.Count
 
     For i = 1 To limit
-        result.Add Source(i)
+        result.Add source(i)
     Next i
     Set TakeFirst = result
 End Function
@@ -222,27 +222,27 @@ End Sub
 
 Private Sub ShowClaimDetail(c As clsClaim)
     
-    lblClaimID.Caption = c.claimID
-    lblSite.Caption = c.claimSite
-    lblProvider.Caption = c.ClaimProviderName
-    lblQuery.Caption = c.claimQuery
-    lblStatus.Caption = c.ClaimStatus
-    lblAttempt.Caption = CStr(c.attempt)
-    lblCreated.Caption = Format$(c.ClaimCreationDate, "dd-mmm-yyyy")
-    lblUpdatedSite.Caption = c.ClaimUpdatedSite
-    lblInsertedOn.Caption = Format$(c.ClaimInsertionDate, "dd-mmm-yyyy hh:nn")
-    lblInsertedBy.Caption = c.ClaimInsertedBy
-    lblLastUpdated.Caption = FormatDateOrBlank(c.LastUpdatedDate)
-    lblLastUpdatedBy.Caption = c.LastUpdatedBy
-    lblLastComment.Caption = c.LastComment
-    lblClosedOn.Caption = FormatDateOrBlank(c.ClaimClosedDate)
-    lblDaysOpen.Caption = CStr(c.DaysOpen) & IIf(c.IsClosed, " (to close)", " (open)")
+    lblClaimID.caption = c.claimID
+    lblSite.caption = c.claimSite
+    lblProvider.caption = c.ClaimProviderName
+    lblQuery.caption = c.claimQuery
+    lblStatus.caption = c.ClaimStatus
+    lblAttempt.caption = CStr(c.attempt)
+    lblCreated.caption = Format$(c.ClaimCreationDate, "dd-mmm-yyyy")
+    lblUpdatedSite.caption = c.ClaimUpdatedSite
+    lblInsertedOn.caption = Format$(c.ClaimInsertionDate, "dd-mmm-yyyy hh:nn")
+    lblInsertedBy.caption = c.ClaimInsertedBy
+    lblLastUpdated.caption = FormatDateOrBlank(c.LastUpdatedDate)
+    lblLastUpdatedBy.caption = c.LastUpdatedBy
+    lblLastComment.caption = c.LastComment
+    lblClosedOn.caption = FormatDateOrBlank(c.ClaimClosedDate)
+    lblDaysOpen.caption = CStr(c.DaysOpen) & IIf(c.IsClosed, " (to close)", " (open)")
     LoadHistoryFor c.claimID
     
 End Sub
 
 Private Sub LoadHistoryFor(ByVal claimID As String)
-    Dim repo As New ClsClaimRepository
+    Dim Repo As New ClsClaimRepository
     Dim histData As Variant
 
     lstHistory.Clear
@@ -250,7 +250,7 @@ Private Sub LoadHistoryFor(ByVal claimID As String)
     On Error GoTo Fail
     Me.MousePointer = fmMousePointerHourGlass
 
-    histData = HistoryToListArray(repo.GetHistory(claimID))
+    histData = HistoryToListArray(Repo.GetHistory(claimID))
     If Not IsEmpty(histData) Then lstHistory.List = histData
 
     Me.MousePointer = fmMousePointerDefault
@@ -258,26 +258,26 @@ Private Sub LoadHistoryFor(ByVal claimID As String)
 
 Fail:
     Me.MousePointer = fmMousePointerDefault
-    lblStatusBar.Caption = "Could not load call history: " & Err.Description
+    lblStatusBar.caption = "Could not load call history: " & Err.Description
 End Sub
 
 Private Sub ClearDetailPanel()
     
-    lblClaimID.Caption = ""
-    lblSite.Caption = ""
-    lblProvider.Caption = ""
-    lblQuery.Caption = ""
-    lblStatus.Caption = ""
-    lblAttempt.Caption = ""
-    lblCreated.Caption = ""
-    lblUpdatedSite.Caption = ""
-    lblInsertedOn.Caption = ""
-    lblInsertedBy.Caption = ""
-    lblLastUpdated.Caption = ""
-    lblLastUpdatedBy.Caption = ""
-    lblLastComment.Caption = ""
-    lblClosedOn.Caption = ""
-    lblDaysOpen.Caption = ""
+    lblClaimID.caption = ""
+    lblSite.caption = ""
+    lblProvider.caption = ""
+    lblQuery.caption = ""
+    lblStatus.caption = ""
+    lblAttempt.caption = ""
+    lblCreated.caption = ""
+    lblUpdatedSite.caption = ""
+    lblInsertedOn.caption = ""
+    lblInsertedBy.caption = ""
+    lblLastUpdated.caption = ""
+    lblLastUpdatedBy.caption = ""
+    lblLastComment.caption = ""
+    lblClosedOn.caption = ""
+    lblDaysOpen.caption = ""
     lstHistory.Clear
     
 End Sub
@@ -347,7 +347,7 @@ End Sub
 Private Sub CreateListBoxHeaders(lst As MSForms.ListBox, headerNames As Variant)
     Dim i As Integer
     Dim lbl As MSForms.Label
-    Dim currentLeft As Single
+    Dim CurrentLeft As Single
     Dim colWidths() As String
     Dim singleWidth As Single
     Dim ctrl As control
@@ -361,7 +361,7 @@ Private Sub CreateListBoxHeaders(lst As MSForms.ListBox, headerNames As Variant)
     Next ctrl
 
     ' 2. Start positioning at the left edge of the ListBox
-    currentLeft = lst.Left
+    CurrentLeft = lst.Left
     
     ' 3. Parse the ColumnWidths property (e.g., "50;100;75")
     If lst.ColumnWidths <> "" Then
@@ -376,7 +376,7 @@ Private Sub CreateListBoxHeaders(lst As MSForms.ListBox, headerNames As Variant)
             singleWidth = Val(colWidths(i)) ' Val ignores the " pt" text if present
         Else
             ' Fallback: evenly divide the ListBox width if ColumnWidths aren't set
-            singleWidth = lst.Width / (UBound(headerNames) - LBound(headerNames) + 1)
+            singleWidth = lst.width / (UBound(headerNames) - LBound(headerNames) + 1)
         End If
 
         ' Add the label control to the UserForm dynamically
@@ -384,11 +384,11 @@ Private Sub CreateListBoxHeaders(lst As MSForms.ListBox, headerNames As Variant)
         
         ' Format and position the label
         With lbl
-            .Caption = " " & headerNames(i)
-            .Left = currentLeft
+            .caption = " " & headerNames(i)
+            .Left = CurrentLeft
             .Top = lst.Top - 15          ' Place it 15 points above the ListBox
-            .Width = singleWidth
-            .Height = 15
+            .width = singleWidth
+            .height = 15
             .BackColor = &H8000000F      ' Standard grey button-face color
             .SpecialEffect = fmSpecialEffectSunken
             .Font.Bold = True
@@ -396,7 +396,7 @@ Private Sub CreateListBoxHeaders(lst As MSForms.ListBox, headerNames As Variant)
         End With
 
         ' Move the starting position for the next label
-        currentLeft = currentLeft + singleWidth
+        CurrentLeft = CurrentLeft + singleWidth
     Next i
 End Sub
 

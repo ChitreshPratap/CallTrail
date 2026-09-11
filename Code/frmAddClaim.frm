@@ -17,7 +17,7 @@ Option Explicit
 
 Private Sub cmdSave_Click()
     
-    If Trim(txtClaimId.Value) = "" Or Trim(txtClaimSite.Value) = "" _
+    If Trim(txtClaimID.Value) = "" Or Trim(txtClaimSite.Value) = "" _
        Or Trim(txtProviderName.Value) = "" Or Trim(txtClaimQuery.Value) = "" _
        Or Trim(dtCreationDate.Value) = "" Then
         MsgBox "ClaimID, Site, Provider Name, Query and Creation Date are all required.", vbExclamation
@@ -29,7 +29,7 @@ Private Sub cmdSave_Click()
         Exit Sub
     End If
 
-    If AddClaim(Trim(txtClaimId.Value), Trim(txtClaimSite.Value), _
+    If AddClaim(Trim(txtClaimID.Value), Trim(txtClaimSite.Value), _
                 Trim(txtProviderName.Value), Trim(txtClaimQuery.Value), _
                 CDate(dtCreationDate.Value)) Then
         MsgBox "Claim added.", vbInformation
@@ -48,7 +48,7 @@ End Sub
 
 Private Sub resetAddClaim()
         
-    txtClaimId.Value = ""
+    txtClaimID.Value = ""
     txtClaimSite.Value = ""
     txtProviderName.Value = ""
     txtClaimQuery.Value = ""
