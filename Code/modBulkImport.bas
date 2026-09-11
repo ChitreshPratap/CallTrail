@@ -43,7 +43,7 @@ Public Sub ProcessBulkClaims()
 
     Dim ws As Worksheet, lastRow As Long, i As Long
     Dim dataArr As Variant, errorArr() As Variant
-    Dim repo As New clsClaimRepository
+    Dim repo As New ClsClaimRepository
     Dim batch As New Collection
     Dim c As clsClaim
     Dim rowsToDelete As Range
@@ -159,7 +159,7 @@ Public Sub CheckBulkClaims()
     
     Dim ws As Worksheet, lastRow As Long, i As Long
     Dim dataArr As Variant, errorArr() As Variant
-    Dim repo As New clsClaimRepository
+    Dim repo As New ClsClaimRepository
     Dim c As clsClaim
     Dim seen As Object, existing As Object
     Dim problems As String

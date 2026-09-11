@@ -1,64 +1,53 @@
-VERSION 5.00
-Begin {C62A69F0-16DC-11CE-9E98-00AA00574A4F} Frmviewclaims 
-   Caption         =   "UserForm1"
-   ClientHeight    =   7215
-   ClientLeft      =   120
-   ClientTop       =   465
-   ClientWidth     =   14850
-   OleObjectBlob   =   "Frmviewclaims.frx":0000
-   StartUpPosition =   1  'CenterOwner
-End
-Attribute VB_Name = "Frmviewclaims"
+VERSION 1.0 CLASS
+BEGIN
+  MultiUse = -1  'True
+END
+Attribute VB_Name = "ClsViewClaims"
 Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
-Attribute VB_PredeclaredId = True
+Attribute VB_PredeclaredId = False
 Attribute VB_Exposed = False
-' =====================================================================
-' frmViewClaims - code-behind
-'
-' Paste ALL of this into the code module of a UserForm named
-' frmViewClaims. Control names must match the layout table in the
-' Setup Guide, section 6.
-'
-' Performance approach: the claims are loaded from the shared database
-' ONCE (into m_allClaims) when the form opens. Every filter change then
-' works on that in-memory copy - no re-reading the shared file, so
-' filtering is instant and the shared workbook isn't repeatedly locked
-' while someone browses. Refresh re-reads deliberately.
-' =====================================================================
-
 Option Explicit
+Private var_frm As UserFormMain
 
-Private m_allClaims As Collection      ' everything loaded from the DB
-Private m_shownClaims As Collection    ' what's currently in the list
-Private m_loading As Boolean           ' suppresses events during setup
+'Initialization of Tab - 'View Claims'
+Private var_m_allClaims As Collection      ' everything loaded from the DB
+Private var_m_shownClaims As Collection    ' what's currently in the list
+Private var_m_loading As Boolean           ' suppresses events during setup
 
 ' Guard rail: a UserForm ListBox becomes sluggish and eventually fails
 ' well before Excel's row limit. Rather than hang, we cap what's shown
 ' and tell the user to narrow the filter.
 Private Const MAX_LIST_ROWS As Long = 10000
 
-' =====================================================================
-' Form setup
-' =====================================================================
 
-Private Sub UserForm_Initialize()
+
+Public Property Set setForm(uform As UserFormMain)
     
-    m_loading = True
+    Set var_frm = uform
+    
+End Property
 
-    Me.Caption = "CallTrail - View Claims"
+Sub initialize_viewClaimsTab()
+    
+    Dim uform As UserFormMain
+    Set uform = var_frm
+    
+    var_m_loading = True
+
+'    Me.Caption = "CallTrail - View Claims"
 
     ' Status filter: blank/All means no status filtering
-    cboStatus.List = Array("All", "Pending", "Closed")
-    cboStatus.Value = "All"
+    uform.cboStatus.List = Array("All", "Pending", "Closed")
+    uform.cboStatus.Value = "All"
 
     ' Which date the range applies to
-    cboDateField.List = Array("Creation Date", "Insertion Date", "Last Updated", "Closed Date")
-    cboDateField.Value = "Creation Date"
+    uform.cboDateField.List = Array("Creation Date", "Insertion Date", "Last Updated", "Closed Date")
+    uform.cboDateField.Value = "Creation Date"
 
     
     ' Claims list: 6 columns
-    With lstClaims
+    With uform.lstClaims
         .ColumnCount = 6
         .ColumnHeads = False
         .ColumnWidths = "70;80;140;60;50;80"
@@ -66,67 +55,77 @@ Private Sub UserForm_Initialize()
     End With
 
     ' History list for the selected claim: 4 columns
-    With lstHistory
+    With uform.lstHistory
         .ColumnCount = 4
         .ColumnHeads = False
         .ColumnWidths = "80;110;55;220"
     End With
+    
+    'Uncomment
+'    ClearDetailPanel
 
-    ClearDetailPanel
+    var_m_loading = False
 
-    m_loading = False
-
-    LoadClaimsFromDatabase
+    Me.LoadClaimsFromDatabase
     
     ApplyFilters
-    
+
 End Sub
 
-' =====================================================================
-' Data loading
-' =====================================================================
-Private Sub LoadClaimsFromDatabase()
+
+
+
+Public Sub LoadClaimsFromDatabase()
+    
+    Dim uform As UserFormMain
+    Set uform = var_frm
     
     Dim repo As ClsClaimRepository
     Set repo = New ClsClaimRepository
 
     On Error GoTo Fail
-    Me.MousePointer = fmMousePointerHourGlass
-    lblStatusBar.Caption = "Loading claims..."
+    'Me.MousePointer = fmMousePointerHourGlass
+    uform.MousePointer = fmMousePointerHourGlass
+    uform.lblStatusBar.Caption = "Loading claims..."
     DoEvents
 
-    Set m_allClaims = repo.GetAllClaims()
+    Set var_m_allClaims = repo.GetAllClaims()
 
-    Me.MousePointer = fmMousePointerDefault
+    uform.MousePointer = fmMousePointerDefault
     Exit Sub
 
 Fail:
-    Me.MousePointer = fmMousePointerDefault
-    Set m_allClaims = New Collection
-    lblStatusBar.Caption = "Could not load claims: " & Err.Description
+    uform.MousePointer = fmMousePointerDefault
+    Set var_m_allClaims = New Collection
+    uform.lblStatusBar.Caption = "Could not load claims: " & Err.Description
 End Sub
+
 
 ' =====================================================================
 ' Filtering - runs entirely in memory
 ' =====================================================================
 Private Sub ApplyFilters()
+        
+    Dim uform As UserFormMain
+    Set uform = var_frm
+    
     Dim dFrom As Date, dTo As Date
     Dim listData As Variant
     Dim shownCount As Long
 
-    If m_loading Then Exit Sub
-    If m_allClaims Is Nothing Then Exit Sub
+    If var_m_loading Then Exit Sub
+    If var_m_allClaims Is Nothing Then Exit Sub
 
-    dFrom = ParseDateOrZero(txtDateFrom.Value)
-    dTo = ParseDateOrZero(txtDateTo.Value)
+    dFrom = ParseDateOrZero(uform.txtDateFrom.Value)
+    dTo = ParseDateOrZero(uform.txtDateTo.Value)
 
     ' Warn on unparseable input rather than silently ignoring it - a user
     ' who typed a date and sees it quietly do nothing assumes the filter
     ' is broken.
-    If Trim$(txtDateFrom.Value) <> "" And dFrom = 0 Then
-        lblStatusBar.Caption = "'From' date not recognised - ignoring it."
-    ElseIf Trim$(txtDateTo.Value) <> "" And dTo = 0 Then
-        lblStatusBar.Caption = "'To' date not recognised - ignoring it."
+    If Trim$(uform.txtDateFrom.Value) <> "" And dFrom = 0 Then
+        uform.lblStatusBar.Caption = "'From' date not recognised - ignoring it."
+    ElseIf Trim$(uform.txtDateTo.Value) <> "" And dTo = 0 Then
+        uform.lblStatusBar.Caption = "'To' date not recognised - ignoring it."
     End If
 
     If dFrom > 0 And dTo > 0 And dFrom > dTo Then
@@ -134,35 +133,35 @@ Private Sub ApplyFilters()
         Exit Sub
     End If
 
-    Set m_shownClaims = FilterClaims(m_allClaims, _
-                                      CStr(cboStatus.Value), _
+    Set var_m_shownClaims = FilterClaims(var_m_allClaims, _
+                                      CStr(uform.cboStatus.Value), _
                                       SelectedDateField(), _
                                       dFrom, dTo, _
-                                      CStr(txtSearch.Value))
+                                      CStr(uform.txtSearch.Value))
+    'Uncomment
+'    ClearDetailPanel
+    uform.lstClaims.Clear
 
-    ClearDetailPanel
-    lstClaims.Clear
-
-    shownCount = m_shownClaims.Count
+    shownCount = var_m_shownClaims.Count
 
     If shownCount = 0 Then
-        lblStatusBar.Caption = "No claims match the current filter."
-        lblCount.Caption = "0 of " & m_allClaims.Count
+        uform.lblStatusBar.Caption = "No claims match the current filter."
+        uform.lblCount.Caption = "0 of " & var_m_allClaims.Count
         Exit Sub
     End If
 
     If shownCount > MAX_LIST_ROWS Then
-        lblStatusBar.Caption = shownCount & " matches - too many to display. " & _
+        uform.lblStatusBar.Caption = shownCount & " matches - too many to display. " & _
                                "Showing the first " & MAX_LIST_ROWS & "; narrow the filter to see the rest."
-        Set m_shownClaims = TakeFirst(m_shownClaims, MAX_LIST_ROWS)
+        Set var_m_shownClaims = TakeFirst(var_m_shownClaims, MAX_LIST_ROWS)
     Else
-        lblStatusBar.Caption = "Ready."
+        uform.lblStatusBar.Caption = "Ready."
     End If
 
-    listData = ClaimsToListArray(m_shownClaims)
-    If Not IsEmpty(listData) Then lstClaims.List = listData   ' single assignment
+    listData = ClaimsToListArray(var_m_shownClaims)
+    If Not IsEmpty(listData) Then uform.lstClaims.List = listData   ' single assignment
         
-    lblCount.Caption = m_shownClaims.Count & " of " & m_allClaims.Count
+    uform.lblCount.Caption = var_m_shownClaims.Count & " of " & var_m_allClaims.Count
     
     
     Dim myHeaders As Variant
@@ -171,13 +170,16 @@ Private Sub ApplyFilters()
     myHeaders = Array("Emp ID", "Full Name", "Department")
     
     ' 4. Call the helper function
-    CreateListBoxHeaders lstClaims, myHeaders
+    CreateListBoxHeaders uform.lstClaims, myHeaders
     
 End Sub
 
 Private Function SelectedDateField() As ClaimDateField
-
-    Select Case CStr(cboDateField.Value)
+    
+    Dim uform As UserForm
+    Set uform = var_frm
+    
+    Select Case CStr(uform.cboDateField.Value)
         Case "Insertion Date": SelectedDateField = cdfInsertionDate
         Case "Last Updated":   SelectedDateField = cdfLastUpdated
         Case "Closed Date":    SelectedDateField = cdfClosedDate
@@ -199,6 +201,7 @@ Private Function TakeFirst(Source As Collection, ByVal n As Long) As Collection
     Set TakeFirst = result
 End Function
 
+
 ' =====================================================================
 ' Selection - show full detail for the highlighted claim
 ' =====================================================================
@@ -213,7 +216,7 @@ Private Sub lstClaims_Click()
     End If
 
     ' ListIndex is 0-based; the Collection is 1-based
-    Set c = m_shownClaims(idx + 1)
+    Set c = var_m_shownClaims(idx + 1)
     ShowClaimDetail c
 End Sub
 
@@ -293,14 +296,15 @@ Private Sub cmdApply_Click()
     ApplyFilters
 End Sub
 
+
 Private Sub cmdClear_Click()
-    m_loading = True
+    var_m_loading = True
     cboStatus.Value = "All"
     cboDateField.Value = "Creation Date"
     txtDateFrom.Value = ""
     txtDateTo.Value = ""
     txtSearch.Value = ""
-    m_loading = False
+    var_m_loading = False
     ApplyFilters
 End Sub
 
@@ -311,14 +315,17 @@ Private Sub cmdRefresh_Click()
     ApplyFilters
 End Sub
 
-Private Sub cmdClose_Click()
-    Unload Me
-End Sub
+'Private Sub cmdClose_Click()
+'    Unload Me
+'End Sub
 
 ' Live-filter as the user types in the search box
 Private Sub txtSearch_Change()
     ApplyFilters
 End Sub
+
+
+
 
 ' Enter key in either date box applies the filter
 Private Sub txtDateFrom_KeyDown(ByVal KeyCode As MSForms.ReturnInteger, ByVal Shift As Integer)
@@ -345,9 +352,12 @@ Private Sub CreateListBoxHeaders(lst As MSForms.ListBox, headerNames As Variant)
     Dim singleWidth As Single
     Dim ctrl As control
     
+    Dim uform As UserFormMain
+    Set uform = UserFormMain
+    
     ' 1. Delete any existing dynamic headers (prevents duplicates if code runs twice)
-    For Each ctrl In Me.Controls
-        If Left(ctrl.Name, 10) = "dynHeader_" Then Me.Controls.Remove ctrl.Name
+    For Each ctrl In uform.Controls
+        If Left(ctrl.Name, 10) = "dynHeader_" Then uform.Controls.Remove ctrl.Name
     Next ctrl
 
     ' 2. Start positioning at the left edge of the ListBox
@@ -370,7 +380,7 @@ Private Sub CreateListBoxHeaders(lst As MSForms.ListBox, headerNames As Variant)
         End If
 
         ' Add the label control to the UserForm dynamically
-        Set lbl = Me.Controls.Add("Forms.Label.1", "dynHeader_" & i, True)
+        Set lbl = uform.Controls.Add("Forms.Label.1", "dynHeader_" & i, True)
         
         ' Format and position the label
         With lbl
@@ -389,3 +399,7 @@ Private Sub CreateListBoxHeaders(lst As MSForms.ListBox, headerNames As Variant)
         currentLeft = currentLeft + singleWidth
     Next i
 End Sub
+
+
+
+

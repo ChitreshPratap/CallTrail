@@ -25,3 +25,16 @@ Function getStyledBoxULine(txtBox As MSForms.TextBox, Optional placeHolderText A
     Set getStyledBoxULine = styledBox
     
 End Function
+
+
+Function getStyledButtonNavigationBar(lbl As MSForms.Label) As tsLabelHE
+    
+    Dim btnStyle As tsLabelHE
+    Set btnStyle = New tsLabelHE
+    btnStyle.setMukhLabel lbl
+    btnStyle.setIncDecInFont 4
+    btnStyle.setOnHoverBackColor VarnahUtil.getFadeColor(AppUtil.getThemeColor(), 0.5)
+    btnStyle.setOnHoverForeColor VarnahUtil.getFadeColor(AppUtil.getThemeColor(), -0.4)
+    Set getStyledButtonNavigationBar = btnStyle
+    
+End Function

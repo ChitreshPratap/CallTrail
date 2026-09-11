@@ -33,18 +33,26 @@ End Sub
 Public Sub ShowAddClaimForm_tab(tabNumber As Integer)
     
     'frmAddClaim.Show
-    Dim uForm As UserFormMain
-    Set uForm = New UserFormMain
-    uForm.setPage tabNumber
-    uForm.Show
-    Unload uForm
-    Set uForm = Nothing
+    Dim uform As UserFormMain
+    Set uform = New UserFormMain
+    uform.setPage tabNumber
+    uform.Show
+    Unload uform
+    Set uform = Nothing
     
 End Sub
 
 
 Public Sub ShowUpdateClaimForm()
     frmUpdateClaim.Show
+End Sub
+
+' Search ONE claim: full detail, read-only call history, and editable
+' detail fields for corrections
+Public Sub ShowSearchClaim()
+
+    frmSearchClaim.Show
+    
 End Sub
 
 Public Sub ShowAdminSiteForm()

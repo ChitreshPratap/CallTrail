@@ -18,7 +18,7 @@ Option Explicit
 
 Private Sub cmdLoad_Click()
     Dim data As Variant
-    data = GetHistoryForClaim(Trim(txtClaimID.Value))
+    data = GetHistoryForClaim(Trim(txtClaimId.Value))
     lstHistory.Clear
     If IsEmpty(data) Then
         lstHistory.AddItem "No Data Found."

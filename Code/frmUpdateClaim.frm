@@ -21,11 +21,11 @@ Private Sub UserForm_Initialize()
 End Sub
 
 Private Sub cmdSubmit_Click()
-    If Trim(txtClaimID.Value) = "" Or Trim(txtComment.Value) = "" Then
+    If Trim(txtClaimId.Value) = "" Or Trim(txtComment.Value) = "" Then
         MsgBox "Claim ID and comment are required.", vbExclamation
         Exit Sub
     End If
-    If LogCallAndUpdateStatus(Trim(txtClaimID.Value), Trim(txtComment.Value), cboStatus.Value) Then
+    If LogCallAndUpdateStatus(Trim(txtClaimId.Value), Trim(txtComment.Value), cboStatus.Value) Then
         MsgBox "Call logged.", vbInformation
         txtComment.Value = ""
     End If

@@ -14,6 +14,7 @@ Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
 Public btnStyleCollection As New Collection
+Public collection_navigationButton As New Collection
 Public buttonHome As tsLabelHE
 Public buttonProcessing As tsLabelHE
 Public buttonAboutUs As tsLabelHE
@@ -21,12 +22,19 @@ Public mainWindowHeight As Long
 Public mainWindowWidth As Long
 Public txtBoxStyleCollection As New Collection
 Public tbStyle2 As TsTextFieldStyle2
-
 Public contAddClaim As ClsContAddClaim
+
+Dim var_viewClaimsTab As ClsViewClaims
 
 Private Sub cmdCancel_Click()
     
     contAddClaim.cmdCancel_Click Me
+
+End Sub
+
+Private Sub cmdClose_Click()
+
+    Me.frameFilterViewClaims.Visible = False
 
 End Sub
 
@@ -62,12 +70,9 @@ Private Sub frameDashboard_Click()
 
 End Sub
 
-Private Sub frameMain_Click()
 
-End Sub
-
-Private Sub framePageProcess_Click()
-
+Private Sub lblBtnApplyFilters_Click()
+    Me.frameFilterViewClaims.Visible = True
 End Sub
 
 Private Sub lblCloseDashboard_Click()
@@ -130,6 +135,10 @@ Private Sub lblMenuItemAddClaim_Click()
     Me.multiPageApp.Value = 1
 End Sub
 
+Private Sub lblMenuItemViewClaims_Click()
+    Me.multiPageApp.Value = 3
+End Sub
+
 Private Sub lblShowDashboard_Click()
     Dim i As Long
     For i = 0 To 300
@@ -143,29 +152,11 @@ Private Sub lblShowDashboard_Click()
 
 End Sub
 
-Private Sub MultiPageMain_Change()
 
-End Sub
+Private Sub lstClaims_Click()
 
-Private Sub TabStrip1_Change()
-
-End Sub
-
-Private Sub multiPageApp_Change()
-
-End Sub
-
-Private Sub TextBox1_Change()
-
-End Sub
-
-
-Private Sub txtClaimId_Change()
-
-End Sub
-
-Private Sub txtClaimQuery_Change()
-
+    var_viewClaimsTab.()
+    
 End Sub
 
 Private Sub UserForm_Initialize()
@@ -193,6 +184,7 @@ Private Sub UserForm_Initialize()
         .BackColor = AppUtil.getThemeColor()
         
     End With
+    
     With frameDashboard
         .Width = 170
         .Left = 0
@@ -208,16 +200,24 @@ Private Sub UserForm_Initialize()
         .BackColor = VarnahUtil.getFadeColor(AppUtil.getThemeColor(), -0.4)
         .ForeColor = VarnahUtil.getFadeColor(AppUtil.getThemeColor(), 0.8)
     End With
-    'With lblProcess
+        
     With lblMenuItemAddClaim
         .BackColor = VarnahUtil.getFadeColor(AppUtil.getThemeColor(), -0.4)
         .ForeColor = VarnahUtil.getFadeColor(AppUtil.getThemeColor(), 0.8)
     End With
+    
     With lblAbout
         .BackColor = VarnahUtil.getFadeColor(AppUtil.getThemeColor(), -0.4)
         .ForeColor = VarnahUtil.getFadeColor(AppUtil.getThemeColor(), 0.8)
     
     End With
+    
+    With lblMenuItemViewClaims
+        .BackColor = VarnahUtil.getFadeColor(AppUtil.getThemeColor(), -0.4)
+        .ForeColor = VarnahUtil.getFadeColor(AppUtil.getThemeColor(), 0.8)
+    
+    End With
+    
     With lblAppHeader
         .Width = frameMain.Width
         .Left = 10
@@ -251,6 +251,7 @@ Private Sub UserForm_Initialize()
         .Top = 0
         .Height = mainWindowHeight - lblCloseDashboard.Height - lblCloseDashboard.Top
     End With
+    
     With framePageAbout
         .Width = frameMain.Width
         .BackColor = VarnahUtil.getFadeColor(AppUtil.getThemeColor(), 0.9)
@@ -266,37 +267,64 @@ Private Sub UserForm_Initialize()
         .Top = 0
         .Height = mainWindowHeight - lblCloseDashboard.Height - lblCloseDashboard.Top
     End With
+    
+    With framePageViewClaims
+        .Width = frameMain.Width
+        .BackColor = VarnahUtil.getFadeColor(AppUtil.getThemeColor(), 0.9)
+        .Left = 0
+        .Top = 0
+        .Height = mainWindowHeight - lblCloseDashboard.Height - lblCloseDashboard.Top
+        
+        Me.frameFilterViewClaims.Left = .Width - Me.frameFilterViewClaims.Width
+        Me.frameFilterViewClaims.Height = .Height
+        Me.frameFilterViewClaims.Top = -2
+        
+        
+    End With
+    
     multiPageApp.Value = 0
             
  '   txtBoxStyleCollection.Add Styler.getStyledBox(textBoxName, "Enter Name")
 '    txtBoxStyleCollection.Add Styler.getStyledBox(textBoxDOB, "Select DOB")
     
     
-    
     'Style Page Add Claim
-    txtBoxStyleCollection.Add Styler.getStyledBoxULine(Me.txtClaimID, "Claim Id*")
+    txtBoxStyleCollection.Add Styler.getStyledBoxULine(Me.txtClaimId, "Claim Id*")
     txtBoxStyleCollection.Add Styler.getStyledBoxULine(Me.txtClaimSite, "Claim Site*")
     txtBoxStyleCollection.Add Styler.getStyledBoxULine(Me.txtProviderName, "Provider Name*")
     txtBoxStyleCollection.Add Styler.getStyledBoxULine(Me.dtCreationDate, "Creation Date*")
-
-    
     Set tbStyle2 = New TsTextFieldStyle2
     tbStyle2.init Me.txtClaimQuery, "Claim Query (Required) "
+    
       
-    Set buttonHome = New tsLabelHE
-    buttonHome.setMukhLabel lblHome
-    buttonHome.setIncDecInFont -2
+    'Styling Navigation Pane
+    collection_navigationButton.Add Styler.getStyledButtonNavigationBar(lblHome)
+    collection_navigationButton.Add Styler.getStyledButtonNavigationBar(lblMenuItemAddClaim)
+    collection_navigationButton.Add Styler.getStyledButtonNavigationBar(lblAbout)
+    collection_navigationButton.Add Styler.getStyledButtonNavigationBar(lblMenuItemViewClaims)
     
-    Set buttonProcessing = New tsLabelHE
-    buttonProcessing.setMukhLabel lblMenuItemAddClaim
-    buttonProcessing.setIncDecInFont 4
-    buttonProcessing.setOnHoverForeColor (400)
+'    Set buttonHome = New tsLabelHE
+'    buttonHome.setMukhLabel lblHome
+'    buttonHome.setIncDecInFont 4
+'    buttonHome.setOnHoverBackColor VarnahUtil.getFadeColor(AppUtil.getThemeColor(), 0.8)
+'    buttonHome.setOnHoverForeColor VarnahUtil.getFadeColor(AppUtil.getThemeColor(), -0.4)
     
     
-    Set buttonAboutUs = New tsLabelHE
-    buttonAboutUs.setMukhLabel lblAbout
-    buttonAboutUs.setIncDecInFont 10
-    buttonAboutUs.setOnHoverBackColor (1000)
+'        .BackColor = VarnahUtil.getFadeColor(AppUtil.getThemeColor(), -0.4)
+'        .ForeColor = VarnahUtil.getFadeColor(AppUtil.getThemeColor(), 0.8)
+    
+    
+'    Set buttonProcessing = New tsLabelHE
+'    buttonProcessing.setMukhLabel lblMenuItemAddClaim
+'    buttonProcessing.setIncDecInFont 4
+'    'buttonProcessing.setOnHoverForeColor (400)
+'
+'
+'    Set buttonAboutUs = New tsLabelHE
+'    buttonAboutUs.setMukhLabel lblMenuItemViewClaims
+'    buttonAboutUs.setIncDecInFont 4
+'    'buttonAboutUs.setOnHoverBackColor (1000)
+''    buttonAboutUs.setOnHoverForeColor = ""
     
     'buttonAboutUs.init lblAbout
     'btnStyleCollection.Add Styler.getStyleButton(btnSelectDate)
@@ -306,6 +334,18 @@ Private Sub UserForm_Initialize()
 '    lblF.Size = 24
 '    textBoxName.Font = lblF
 '    Debug.Print "Hello"
+    
+    'frameFilterViewClaims.Visible = Not (frameFilterViewClaims.Visible)
+    
+    
+    'Initializing tab - 'View Claim'
+'    Me.initialize_viewClaimsTab
+    
+    Set var_viewClaimsTab = New ClsViewClaims
+    Set var_viewClaimsTab.setForm = Me
+    var_viewClaimsTab.initialize_viewClaimsTab
+    
+    
 End Sub
 
 Sub setPage(pageNumber As Integer)
@@ -313,3 +353,5 @@ Sub setPage(pageNumber As Integer)
     Me.multiPageApp.Value = pageNumber
     
 End Sub
+
+
