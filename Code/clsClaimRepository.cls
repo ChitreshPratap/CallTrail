@@ -2,11 +2,13 @@ VERSION 1.0 CLASS
 BEGIN
   MultiUse = -1  'True
 END
-Attribute VB_Name = "ClsClaimRepository"
+Attribute VB_Name = "clsClaimRepository"
 Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = False
 Attribute VB_Exposed = False
+Option Explicit
+
 ' =====================================================================
 ' clsClaimRepository
 ' Object-oriented replacement for modDataAccess. Forms work with
@@ -73,13 +75,13 @@ Public Function LogCallAndUpdateStatus(ByVal claimID As String, ByVal comment As
     Dim wb As Workbook, wsHist As Worksheet, wsClaims As Worksheet
     Dim claimRow As Long, histRow As Long, statusCol As Long, histLastCol As Long
     Dim hmapC As Object, hmapH As Object, histArr() As Variant
-    Dim UserName As String, stamp As Date
+    Dim userName As String, stamp As Date
 
     On Error GoTo Fail
     Set wb = OpenCentralDB()
     Set wsClaims = wb.Sheets(SHEET_CLAIMS)
     Set wsHist = wb.Sheets(SHEET_HISTORY)
-    UserName = GetWindowsUserName()
+    userName = GetWindowsUserName()
     stamp = Now
 
     claimRow = FindClaimRow(wb, claimID)
@@ -106,7 +108,7 @@ Public Function LogCallAndUpdateStatus(ByVal claimID As String, ByVal comment As
     ReDim histArr(1 To 1, 1 To histLastCol)
     histArr(1, ColIdx(hmapH, "HistoryID")) = NextHistoryID(wb)
     histArr(1, ColIdx(hmapH, "ClaimID")) = claimID
-    histArr(1, ColIdx(hmapH, "CallerName")) = UserName
+    histArr(1, ColIdx(hmapH, "CallerName")) = userName
     histArr(1, ColIdx(hmapH, "CallDateTime")) = stamp
     histArr(1, ColIdx(hmapH, "CallerComment")) = comment
     histArr(1, ColIdx(hmapH, "CallerStatus")) = newStatus
@@ -117,7 +119,7 @@ Public Function LogCallAndUpdateStatus(ByVal claimID As String, ByVal comment As
         wsClaims.Cells(claimRow, ColIdx(hmapC, "Attempt")).Value + 1
     wsClaims.Cells(claimRow, statusCol).Value = newStatus
     wsClaims.Cells(claimRow, ColIdx(hmapC, "LastUpdatedDate")).Value = stamp
-    wsClaims.Cells(claimRow, ColIdx(hmapC, "LastUpdatedBy")).Value = UserName
+    wsClaims.Cells(claimRow, ColIdx(hmapC, "LastUpdatedBy")).Value = userName
     wsClaims.Cells(claimRow, ColIdx(hmapC, "LastComment")).Value = comment
 
     If LCase$(newStatus) = LCase$(STATUS_CLOSED) Then
@@ -178,7 +180,6 @@ End Function
 ' e.g.: For Each c In repo.GetAllClaims(): If c.IsClosed Then ...
 ' ---------------------------------------------------------------------
 Public Function GetAllClaims() As Collection
-    
     Dim wb As Workbook, ws As Worksheet, lastRow As Long, lastCol As Long, i As Long
     Dim result As New Collection
     Dim c As clsClaim
@@ -199,13 +200,13 @@ Public Function GetAllClaims() As Collection
 
         For i = 1 To UBound(dataArr, 1)
             Set c = New clsClaim
-            c.claimID = dataArr(i, ColIdx(hmap, "ClaimID"))
-            c.claimSite = dataArr(i, ColIdx(hmap, "ClaimSite"))
+            c.ClaimID = dataArr(i, ColIdx(hmap, "ClaimID"))
+            c.ClaimSite = dataArr(i, ColIdx(hmap, "ClaimSite"))
             c.ClaimProviderName = dataArr(i, ColIdx(hmap, "ClaimProviderName"))
-            c.claimQuery = dataArr(i, ColIdx(hmap, "ClaimQuery"))
+            c.ClaimQuery = dataArr(i, ColIdx(hmap, "ClaimQuery"))
             c.ClaimCreationDate = dataArr(i, ColIdx(hmap, "ClaimCreationDate"))
             c.ClaimStatus = dataArr(i, ColIdx(hmap, "ClaimStatus"))
-            c.attempt = dataArr(i, ColIdx(hmap, "Attempt"))
+            c.Attempt = dataArr(i, ColIdx(hmap, "Attempt"))
             c.ClaimUpdatedSite = dataArr(i, ColIdx(hmap, "ClaimUpdatedSite"))
             c.ClaimInsertionDate = dataArr(i, ColIdx(hmap, "ClaimInsertionDate"))
             c.ClaimInsertedBy = dataArr(i, ColIdx(hmap, "ClaimInsertedBy"))
@@ -213,7 +214,7 @@ Public Function GetAllClaims() As Collection
             c.LastUpdatedBy = dataArr(i, ColIdx(hmap, "LastUpdatedBy"))
             c.LastComment = dataArr(i, ColIdx(hmap, "LastComment"))
             c.ClaimClosedDate = dataArr(i, ColIdx(hmap, "ClaimClosedDate"))
-            result.Add c, c.claimID
+            result.Add c, c.ClaimID
         Next i
     End If
 
@@ -225,6 +226,101 @@ Fail:
     MsgBox "Could not read claims: " & Err.Description, vbCritical
     If Not wb Is Nothing Then CloseCentralDB wb, False
     Set GetAllClaims = New Collection
+End Function
+
+' ---------------------------------------------------------------------
+' Admin-only: reopen a Closed claim so calling can resume.
+'
+' Unlike UpdateClaimDetails, this DOES write a history row. Reopening is
+' a status change, and a status change that leaves no trace is exactly
+' the kind of thing an audit needs to see. A reason is mandatory.
+'
+' What it does NOT do is increment Attempt. That column counts CALLS,
+' and a reopen is an administrative act, not a call to the customer.
+' Incrementing it would overstate calling effort.
+'
+' ClaimClosedDate is cleared. If it were left in place the claim would
+' read as closed to every dashboard and to clsClaim.DaysOpen, which
+' would silently report a stale time-to-close.
+' ---------------------------------------------------------------------
+Public Function ReopenClaim(ByVal claimID As String, ByVal reason As String) As Boolean
+    Dim wb As Workbook, wsClaims As Worksheet, wsHist As Worksheet
+    Dim claimRow As Long, histRow As Long, histLastCol As Long
+    Dim hmapC As Object, hmapH As Object, histArr() As Variant
+    Dim userName As String, stamp As Date
+
+    If Trim$(reason) = "" Then
+        MsgBox "A reason is required to reopen a claim.", vbExclamation, "Reason Needed"
+        ReopenClaim = False
+        Exit Function
+    End If
+
+    On Error GoTo Fail
+    Set wb = OpenCentralDB()
+
+    If Not IsCurrentUserAdmin(wb) Then
+        MsgBox "Only Admin users can reopen a closed claim.", vbExclamation, "Access Denied"
+        CloseCentralDB wb, False
+        ReopenClaim = False
+        Exit Function
+    End If
+
+    Set wsClaims = wb.Sheets(SHEET_CLAIMS)
+    Set wsHist = wb.Sheets(SHEET_HISTORY)
+    Set hmapC = BuildHeaderMap(wsClaims)
+    Set hmapH = BuildHeaderMap(wsHist)
+
+    claimRow = FindClaimRow(wb, claimID)
+    If claimRow = 0 Then
+        MsgBox "Claim ID '" & claimID & "' not found.", vbExclamation
+        CloseCentralDB wb, False
+        ReopenClaim = False
+        Exit Function
+    End If
+
+    If LCase$(Trim$(wsClaims.Cells(claimRow, ColIdx(hmapC, "ClaimStatus")).Value)) _
+       <> LCase$(STATUS_CLOSED) Then
+        MsgBox "Claim '" & claimID & "' is not Closed, so there is nothing to reopen.", _
+               vbExclamation, "Not Closed"
+        CloseCentralDB wb, False
+        ReopenClaim = False
+        Exit Function
+    End If
+
+    userName = GetWindowsUserName()
+    stamp = Now
+
+    ' --- audit row in the history trail ---
+    histLastCol = wsHist.Cells(1, wsHist.Columns.Count).End(xlToLeft).Column
+    histRow = wsHist.Cells(wsHist.Rows.Count, ColIdx(hmapH, "HistoryID")).End(xlUp).Row + 1
+    ReDim histArr(1 To 1, 1 To histLastCol)
+    histArr(1, ColIdx(hmapH, "HistoryID")) = NextHistoryID(wb)
+    histArr(1, ColIdx(hmapH, "ClaimID")) = claimID
+    histArr(1, ColIdx(hmapH, "CallerName")) = userName
+    histArr(1, ColIdx(hmapH, "CallDateTime")) = stamp
+    ' The marker matters: without it this row is indistinguishable from a
+    ' logged call when someone reads or counts the history.
+    histArr(1, ColIdx(hmapH, "CallerComment")) = "[REOPENED BY ADMIN] " & Trim$(reason)
+    histArr(1, ColIdx(hmapH, "CallerStatus")) = STATUS_PENDING
+    wsHist.Range(wsHist.Cells(histRow, 1), wsHist.Cells(histRow, histLastCol)).Value = histArr
+
+    ' --- flip the claim back to Pending ---
+    wsClaims.Cells(claimRow, ColIdx(hmapC, "ClaimStatus")).Value = STATUS_PENDING
+    wsClaims.Cells(claimRow, ColIdx(hmapC, "ClaimClosedDate")).ClearContents
+    wsClaims.Cells(claimRow, ColIdx(hmapC, "LastUpdatedDate")).Value = stamp
+    wsClaims.Cells(claimRow, ColIdx(hmapC, "LastUpdatedBy")).Value = userName
+    wsClaims.Cells(claimRow, ColIdx(hmapC, "LastComment")).Value = _
+        "[REOPENED BY ADMIN] " & Trim$(reason)
+    ' Attempt intentionally left alone - see the note above.
+
+    CloseCentralDB wb, True
+    ReopenClaim = True
+    Exit Function
+
+Fail:
+    MsgBox "Could not reopen claim: " & Err.Description, vbCritical
+    If Not wb Is Nothing Then CloseCentralDB wb, False
+    ReopenClaim = False
 End Function
 
 ' ---------------------------------------------------------------------
@@ -240,17 +336,17 @@ End Function
 ' Returns the number of claims actually inserted; duplicates are skipped
 ' and reported back via the skippedIDs argument.
 ' ---------------------------------------------------------------------
-Public Function AddClaimsBulk(Claims As Collection, Optional ByRef skippedIDs As String) As Long
+Public Function AddClaimsBulk(claims As Collection, Optional ByRef skippedIDs As String) As Long
     Dim wb As Workbook, ws As Worksheet
     Dim hmap As Object, existing As Object
     Dim lastRow As Long, lastCol As Long, firstNewRow As Long
     Dim idArr As Variant, outArr() As Variant
     Dim c As clsClaim, i As Long, n As Long, inserted As Long
-    Dim UserName As String, stamp As Date
+    Dim userName As String, stamp As Date
 
     On Error GoTo Fail
-    If Claims Is Nothing Then Exit Function
-    If Claims.Count = 0 Then Exit Function
+    If claims Is Nothing Then Exit Function
+    If claims.Count = 0 Then Exit Function
 
     Set wb = OpenCentralDB()
     Set ws = wb.Sheets(SHEET_CLAIMS)
@@ -276,28 +372,28 @@ Public Function AddClaimsBulk(Claims As Collection, Optional ByRef skippedIDs As
         End If
     End If
 
-    ReDim outArr(1 To Claims.Count, 1 To lastCol)
-    UserName = GetWindowsUserName()
+    ReDim outArr(1 To claims.Count, 1 To lastCol)
+    userName = GetWindowsUserName()
     stamp = Now
     n = 0
     skippedIDs = ""
 
-    For Each c In Claims
-        If existing.Exists(Trim$(LCase$(c.claimID))) Then
-            skippedIDs = skippedIDs & IIf(skippedIDs = "", "", ", ") & c.claimID
+    For Each c In claims
+        If existing.Exists(Trim$(LCase$(c.ClaimID))) Then
+            skippedIDs = skippedIDs & IIf(skippedIDs = "", "", ", ") & c.ClaimID
         Else
             n = n + 1
-            outArr(n, ColIdx(hmap, "ClaimID")) = c.claimID
-            outArr(n, ColIdx(hmap, "ClaimSite")) = c.claimSite
+            outArr(n, ColIdx(hmap, "ClaimID")) = c.ClaimID
+            outArr(n, ColIdx(hmap, "ClaimSite")) = c.ClaimSite
             outArr(n, ColIdx(hmap, "ClaimProviderName")) = c.ClaimProviderName
-            outArr(n, ColIdx(hmap, "ClaimQuery")) = c.claimQuery
+            outArr(n, ColIdx(hmap, "ClaimQuery")) = c.ClaimQuery
             outArr(n, ColIdx(hmap, "ClaimCreationDate")) = c.ClaimCreationDate
             outArr(n, ColIdx(hmap, "ClaimStatus")) = STATUS_PENDING
             outArr(n, ColIdx(hmap, "Attempt")) = 0
-            outArr(n, ColIdx(hmap, "ClaimUpdatedSite")) = c.claimSite
+            outArr(n, ColIdx(hmap, "ClaimUpdatedSite")) = c.ClaimSite
             outArr(n, ColIdx(hmap, "ClaimInsertionDate")) = stamp
-            outArr(n, ColIdx(hmap, "ClaimInsertedBy")) = UserName
-            existing(Trim$(LCase$(c.claimID))) = True ' guard against dupes within the batch itself
+            outArr(n, ColIdx(hmap, "ClaimInsertedBy")) = userName
+            existing(Trim$(LCase$(c.ClaimID))) = True ' guard against dupes within the batch itself
         End If
     Next c
 
@@ -305,7 +401,7 @@ Public Function AddClaimsBulk(Claims As Collection, Optional ByRef skippedIDs As
         ' If any were skipped, outArr has unused trailing rows. Trim it to
         ' exactly n rows so the array and the target range match exactly,
         ' rather than relying on Excel silently taking the top-left block.
-        If n < Claims.Count Then
+        If n < claims.Count Then
             Dim trimmed() As Variant, r As Long, k As Long
             ReDim trimmed(1 To n, 1 To lastCol)
             For r = 1 To n
@@ -418,13 +514,13 @@ Public Function FindClaim(ByVal claimID As String) As clsClaim
     rowArr = ws.Range(ws.Cells(claimRow, 1), ws.Cells(claimRow, lastCol)).Value ' one row, one read
 
     Set c = New clsClaim
-    c.claimID = rowArr(1, ColIdx(hmap, "ClaimID"))
-    c.claimSite = rowArr(1, ColIdx(hmap, "ClaimSite"))
+    c.ClaimID = rowArr(1, ColIdx(hmap, "ClaimID"))
+    c.ClaimSite = rowArr(1, ColIdx(hmap, "ClaimSite"))
     c.ClaimProviderName = rowArr(1, ColIdx(hmap, "ClaimProviderName"))
-    c.claimQuery = rowArr(1, ColIdx(hmap, "ClaimQuery"))
+    c.ClaimQuery = rowArr(1, ColIdx(hmap, "ClaimQuery"))
     c.ClaimCreationDate = rowArr(1, ColIdx(hmap, "ClaimCreationDate"))
     c.ClaimStatus = rowArr(1, ColIdx(hmap, "ClaimStatus"))
-    c.attempt = rowArr(1, ColIdx(hmap, "Attempt"))
+    c.Attempt = rowArr(1, ColIdx(hmap, "Attempt"))
     c.ClaimUpdatedSite = rowArr(1, ColIdx(hmap, "ClaimUpdatedSite"))
     c.ClaimInsertionDate = rowArr(1, ColIdx(hmap, "ClaimInsertionDate"))
     c.ClaimInsertedBy = rowArr(1, ColIdx(hmap, "ClaimInsertedBy"))
@@ -448,7 +544,6 @@ End Function
 ' filters in memory - fast even once History has many thousands of
 ' rows across all claims combined.
 Public Function GetHistory(ByVal claimID As String) As Collection
-    
     Dim wb As Workbook, ws As Worksheet, lastRow As Long, lastCol As Long, i As Long
     Dim result As New Collection
     Dim h As clsHistoryEntry
@@ -471,9 +566,9 @@ Public Function GetHistory(ByVal claimID As String) As Collection
         For i = 1 To UBound(dataArr, 1)
             If Trim$(CStr(dataArr(i, idColArr))) = target Then
                 Set h = New clsHistoryEntry
-                h.historyId = dataArr(i, ColIdx(hmap, "HistoryID"))
-                h.claimID = dataArr(i, idColArr)
-                h.callerName = dataArr(i, ColIdx(hmap, "CallerName"))
+                h.HistoryID = dataArr(i, ColIdx(hmap, "HistoryID"))
+                h.ClaimID = dataArr(i, idColArr)
+                h.CallerName = dataArr(i, ColIdx(hmap, "CallerName"))
                 h.CallDateTime = dataArr(i, ColIdx(hmap, "CallDateTime"))
                 h.CallerComment = dataArr(i, ColIdx(hmap, "CallerComment"))
                 h.CallerStatus = dataArr(i, ColIdx(hmap, "CallerStatus"))
@@ -491,5 +586,3 @@ Fail:
     If Not wb Is Nothing Then CloseCentralDB wb, False
     Set GetHistory = New Collection
 End Function
-
-

@@ -241,6 +241,101 @@ Fail:
 End Function
 
 ' ---------------------------------------------------------------------
+' Admin-only: reopen a Closed claim so calling can resume.
+'
+' Unlike UpdateClaimDetails, this DOES write a history row. Reopening is
+' a status change, and a status change that leaves no trace is exactly
+' the kind of thing an audit needs to see. A reason is mandatory.
+'
+' What it does NOT do is increment Attempt. That column counts CALLS,
+' and a reopen is an administrative act, not a call to the customer.
+' Incrementing it would overstate calling effort.
+'
+' ClaimClosedDate is cleared. If it were left in place the claim would
+' read as closed to every dashboard and to clsClaim.DaysOpen, which
+' would silently report a stale time-to-close.
+' ---------------------------------------------------------------------
+Public Function ReopenClaim(ByVal claimID As String, ByVal reason As String) As Boolean
+    Dim wb As Workbook, wsClaims As Worksheet, wsHist As Worksheet
+    Dim claimRow As Long, histRow As Long, histLastCol As Long
+    Dim hmapC As Object, hmapH As Object, histArr() As Variant
+    Dim userName As String, stamp As Date
+
+    If Trim$(reason) = "" Then
+        MsgBox "A reason is required to reopen a claim.", vbExclamation, "Reason Needed"
+        ReopenClaim = False
+        Exit Function
+    End If
+
+    On Error GoTo Fail
+    Set wb = OpenCentralDB()
+
+    If Not IsCurrentUserAdmin(wb) Then
+        MsgBox "Only Admin users can reopen a closed claim.", vbExclamation, "Access Denied"
+        CloseCentralDB wb, False
+        ReopenClaim = False
+        Exit Function
+    End If
+
+    Set wsClaims = wb.Sheets(SHEET_CLAIMS)
+    Set wsHist = wb.Sheets(SHEET_HISTORY)
+    Set hmapC = BuildHeaderMap(wsClaims)
+    Set hmapH = BuildHeaderMap(wsHist)
+
+    claimRow = FindClaimRow(wb, claimID)
+    If claimRow = 0 Then
+        MsgBox "Claim ID '" & claimID & "' not found.", vbExclamation
+        CloseCentralDB wb, False
+        ReopenClaim = False
+        Exit Function
+    End If
+
+    If LCase$(Trim$(wsClaims.Cells(claimRow, ColIdx(hmapC, "ClaimStatus")).Value)) _
+       <> LCase$(STATUS_CLOSED) Then
+        MsgBox "Claim '" & claimID & "' is not Closed, so there is nothing to reopen.", _
+               vbExclamation, "Not Closed"
+        CloseCentralDB wb, False
+        ReopenClaim = False
+        Exit Function
+    End If
+
+    userName = GetWindowsUserName()
+    stamp = Now
+
+    ' --- audit row in the history trail ---
+    histLastCol = wsHist.Cells(1, wsHist.Columns.Count).End(xlToLeft).Column
+    histRow = wsHist.Cells(wsHist.Rows.Count, ColIdx(hmapH, "HistoryID")).End(xlUp).Row + 1
+    ReDim histArr(1 To 1, 1 To histLastCol)
+    histArr(1, ColIdx(hmapH, "HistoryID")) = NextHistoryID(wb)
+    histArr(1, ColIdx(hmapH, "ClaimID")) = claimID
+    histArr(1, ColIdx(hmapH, "CallerName")) = userName
+    histArr(1, ColIdx(hmapH, "CallDateTime")) = stamp
+    ' The marker matters: without it this row is indistinguishable from a
+    ' logged call when someone reads or counts the history.
+    histArr(1, ColIdx(hmapH, "CallerComment")) = "[REOPENED BY ADMIN] " & Trim$(reason)
+    histArr(1, ColIdx(hmapH, "CallerStatus")) = STATUS_PENDING
+    wsHist.Range(wsHist.Cells(histRow, 1), wsHist.Cells(histRow, histLastCol)).Value = histArr
+
+    ' --- flip the claim back to Pending ---
+    wsClaims.Cells(claimRow, ColIdx(hmapC, "ClaimStatus")).Value = STATUS_PENDING
+    wsClaims.Cells(claimRow, ColIdx(hmapC, "ClaimClosedDate")).ClearContents
+    wsClaims.Cells(claimRow, ColIdx(hmapC, "LastUpdatedDate")).Value = stamp
+    wsClaims.Cells(claimRow, ColIdx(hmapC, "LastUpdatedBy")).Value = userName
+    wsClaims.Cells(claimRow, ColIdx(hmapC, "LastComment")).Value = _
+        "[REOPENED BY ADMIN] " & Trim$(reason)
+    ' Attempt intentionally left alone - see the note above.
+
+    CloseCentralDB wb, True
+    ReopenClaim = True
+    Exit Function
+
+Fail:
+    MsgBox "Could not reopen claim: " & Err.Description, vbCritical
+    If Not wb Is Nothing Then CloseCentralDB wb, False
+    ReopenClaim = False
+End Function
+
+' ---------------------------------------------------------------------
 ' Read helpers for populating the UI / dashboards.
 ' Returns the full used range (headers included) so new columns
 ' automatically flow through - the consumer matches by header name.

@@ -30,22 +30,24 @@ Private m_pg As MSForms.Page
 
 Private WithEvents cmdChangeSite As MSForms.CommandButton
 Attribute cmdChangeSite.VB_VarHelpID = -1
-'Attribute cmdChangeSite.VB_VarHelpID = -1
 Private WithEvents cmdBulkSetup As MSForms.CommandButton
 Attribute cmdBulkSetup.VB_VarHelpID = -1
-'Attribute cmdBulkSetup.VB_VarHelpID = -1
 Private WithEvents cmdBulkLoadFile As MSForms.CommandButton
 Attribute cmdBulkLoadFile.VB_VarHelpID = -1
-'Attribute cmdBulkLoadFile.VB_VarHelpID = -1
 Private WithEvents cmdBulkCheck As MSForms.CommandButton
 Attribute cmdBulkCheck.VB_VarHelpID = -1
-'Attribute cmdBulkCheck.VB_VarHelpID = -1
 Private WithEvents cmdBulkProcess As MSForms.CommandButton
 Attribute cmdBulkProcess.VB_VarHelpID = -1
-'Attribute cmdBulkProcess.VB_VarHelpID = -1
+Private WithEvents cmdReopen As MSForms.CommandButton
+Attribute cmdReopen.VB_VarHelpID = -1
+Private WithEvents cmdCheckStatus As MSForms.CommandButton
+Attribute cmdCheckStatus.VB_VarHelpID = -1
 
 Private txtSiteClaimID As MSForms.TextBox
 Private txtNewSite As MSForms.TextBox
+Private txtReopenClaimID As MSForms.TextBox
+Private txtReopenReason As MSForms.TextBox
+Private lblReopenStatus As MSForms.Label
 Private lblAdminUser As MSForms.Label
 Private lblBulkInfo As MSForms.Label
 
@@ -56,7 +58,7 @@ End Property
 Private Sub IPage_InitPage(ctx As clsAppContext, pg As MSForms.Page)
     Set m_ctx = ctx
     Set m_pg = pg
-                                            
+
     Set txtSiteClaimID = BindControl(pg, "txtAdmClaimID", IPage_PageTitle)
     Set txtNewSite = BindControl(pg, "txtAdmNewSite", IPage_PageTitle)
     Set cmdChangeSite = BindControl(pg, "cmdAdmChangeSite", IPage_PageTitle)
@@ -64,17 +66,26 @@ Private Sub IPage_InitPage(ctx As clsAppContext, pg As MSForms.Page)
     Set cmdBulkLoadFile = BindControl(pg, "cmdAdmBulkLoad", IPage_PageTitle)
     Set cmdBulkCheck = BindControl(pg, "cmdAdmBulkCheck", IPage_PageTitle)
     Set cmdBulkProcess = BindControl(pg, "cmdAdmBulkProcess", IPage_PageTitle)
+    Set txtReopenClaimID = BindControl(pg, "txtAdmReopenID", IPage_PageTitle)
+    Set txtReopenReason = BindControl(pg, "txtAdmReopenReason", IPage_PageTitle)
+    Set cmdCheckStatus = BindControl(pg, "cmdAdmCheckStatus", IPage_PageTitle)
+    Set cmdReopen = BindControl(pg, "cmdAdmReopen", IPage_PageTitle)
+    Set lblReopenStatus = BindControl(pg, "lblAdmReopenStatus", IPage_PageTitle)
+
+    txtReopenReason.MultiLine = True
+    cmdReopen.Enabled = False        ' until a Closed claim is confirmed
+
     Set lblAdminUser = BindOptional(pg, "lblAdmUser")
     Set lblBulkInfo = BindOptional(pg, "lblAdmBulkInfo")
 End Sub
 
 Private Sub IPage_OnActivate()
     If Not lblAdminUser Is Nothing Then
-        lblAdminUser.caption = "Signed in as: " & m_ctx.UserName & _
-                               IIf(m_ctx.isAdmin, " (Admin)", " (User)")
+        lblAdminUser.Caption = "Signed in as: " & m_ctx.UserName & _
+                               IIf(m_ctx.IsAdmin, " (Admin)", " (User)")
     End If
     If Not lblBulkInfo Is Nothing Then
-        lblBulkInfo.caption = "Bulk entry uses the '" & BULK_SHEET & "' sheet. " & _
+        lblBulkInfo.Caption = "Bulk entry uses the '" & BULK_SHEET & "' sheet. " & _
                               "Valid rows are imported and removed; rows with problems stay " & _
                               "with the reason in the ValidationError column."
     End If
@@ -94,6 +105,75 @@ Private Sub cmdChangeSite_Click()
         m_ctx.SetStatus "Site updated for " & Trim$(txtSiteClaimID.Value) & "."
         txtSiteClaimID.Value = ""
         txtNewSite.Value = ""
+    End If
+End Sub
+
+' ---------------------------------------------------------------------
+' Reopen a closed claim.
+'
+' Two steps on purpose: check first, then reopen. The Reopen button
+' stays disabled until a claim has been confirmed Closed, so an admin
+' can't fire a status change at a typo'd ID or at a claim that was
+' already open.
+' ---------------------------------------------------------------------
+Private Sub cmdCheckStatus_Click()
+    Dim c As clsClaim
+
+    cmdReopen.Enabled = False
+    lblReopenStatus.Caption = ""
+
+    If Trim$(txtReopenClaimID.Value) = "" Then
+        MsgBox "Enter a Claim ID to check.", vbExclamation, "Nothing to Check"
+        Exit Sub
+    End If
+
+    Set c = m_ctx.Repo.FindClaim(Trim$(txtReopenClaimID.Value))
+
+    If c Is Nothing Then
+        lblReopenStatus.Caption = "No claim found with that ID."
+        Exit Sub
+    End If
+
+    lblReopenStatus.Caption = c.ClaimProviderName & " | " & c.ClaimSite & _
+                              " | Status: " & c.ClaimStatus & _
+                              " | Calls: " & c.Attempt & _
+                              IIf(c.IsClosed, " | Closed " & FormatDateOrBlank(c.ClaimClosedDate), "")
+
+    If c.IsClosed Then
+        cmdReopen.Enabled = True
+        m_ctx.SetStatus "Claim is Closed - enter a reason and reopen."
+        txtReopenReason.SetFocus
+    Else
+        m_ctx.SetStatus "Claim is already " & c.ClaimStatus & " - nothing to reopen."
+    End If
+End Sub
+
+Private Sub cmdReopen_Click()
+    Dim claimID As String
+
+    claimID = Trim$(txtReopenClaimID.Value)
+    If claimID = "" Then Exit Sub
+
+    If Trim$(txtReopenReason.Value) = "" Then
+        MsgBox "A reason is required. It is written to the claim history as a " & _
+               "permanent record of why this claim was reopened.", _
+               vbExclamation, "Reason Needed"
+        txtReopenReason.SetFocus
+        Exit Sub
+    End If
+
+    If MsgBox("Reopen claim " & claimID & "?" & vbCrLf & vbCrLf & _
+              "It returns to Pending and callers can log calls against it again. " & _
+              "The reason is recorded in the claim history against your name.", _
+              vbYesNo + vbQuestion, "Confirm Reopen") = vbNo Then Exit Sub
+
+    If m_ctx.Repo.ReopenClaim(claimID, Trim$(txtReopenReason.Value)) Then
+        m_ctx.InvalidateClaims
+        m_ctx.SetStatus "Claim " & claimID & " reopened and set back to Pending."
+        txtReopenClaimID.Value = ""
+        txtReopenReason.Value = ""
+        lblReopenStatus.Caption = ""
+        cmdReopen.Enabled = False
     End If
 End Sub
 
@@ -118,4 +198,3 @@ Private Sub cmdBulkProcess_Click()
     m_ctx.InvalidateClaims
     m_ctx.SetStatus "Bulk processing finished - see the " & BULK_SHEET & " sheet."
 End Sub
-
