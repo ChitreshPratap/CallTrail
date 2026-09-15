@@ -30,33 +30,33 @@ Private m_pg As MSForms.Page
 
 Private WithEvents cmdChangeSite As MSForms.CommandButton
 Attribute cmdChangeSite.VB_VarHelpID = -1
-'Attribute cmdChangeSite.VB_VarHelpID = -1
 Private WithEvents cmdBulkSetup As MSForms.CommandButton
 Attribute cmdBulkSetup.VB_VarHelpID = -1
-'Attribute cmdBulkSetup.VB_VarHelpID = -1
 Private WithEvents cmdBulkLoadFile As MSForms.CommandButton
 Attribute cmdBulkLoadFile.VB_VarHelpID = -1
-'Attribute cmdBulkLoadFile.VB_VarHelpID = -1
 Private WithEvents cmdBulkCheck As MSForms.CommandButton
 Attribute cmdBulkCheck.VB_VarHelpID = -1
-'Attribute cmdBulkCheck.VB_VarHelpID = -1
 Private WithEvents cmdBulkProcess As MSForms.CommandButton
 Attribute cmdBulkProcess.VB_VarHelpID = -1
-'Attribute cmdBulkProcess.VB_VarHelpID = -1
 Private WithEvents cmdReopen As MSForms.CommandButton
 Attribute cmdReopen.VB_VarHelpID = -1
-'Attribute cmdReopen.VB_VarHelpID = -1
 Private WithEvents cmdCheckStatus As MSForms.CommandButton
 Attribute cmdCheckStatus.VB_VarHelpID = -1
-'Attribute cmdCheckStatus.VB_VarHelpID = -1
-
-
+Private WithEvents cmdArchivePreview As MSForms.CommandButton
+Attribute cmdArchivePreview.VB_VarHelpID = -1
+Private WithEvents cmdArchiveRun As MSForms.CommandButton
+Attribute cmdArchiveRun.VB_VarHelpID = -1
+Private WithEvents cboArchiveAge As MSForms.ComboBox
+Attribute cboArchiveAge.VB_VarHelpID = -1
+Private WithEvents chkArchiveClosedOnly As MSForms.CheckBox
+Attribute chkArchiveClosedOnly.VB_VarHelpID = -1
 
 Private txtSiteClaimID As MSForms.TextBox
 Private txtNewSite As MSForms.TextBox
 Private txtReopenClaimID As MSForms.TextBox
 Private txtReopenReason As MSForms.TextBox
 Private lblReopenStatus As MSForms.Label
+Private lblArchivePreview As MSForms.Label
 Private lblAdminUser As MSForms.Label
 Private lblBulkInfo As MSForms.Label
 
@@ -67,7 +67,7 @@ End Property
 Private Sub IPage_InitPage(ctx As clsAppContext, pg As MSForms.Page)
     Set m_ctx = ctx
     Set m_pg = pg
-                                            
+
     Set txtSiteClaimID = BindControl(pg, "txtAdmClaimID", IPage_PageTitle)
     Set txtNewSite = BindControl(pg, "txtAdmNewSite", IPage_PageTitle)
     Set cmdChangeSite = BindControl(pg, "cmdAdmChangeSite", IPage_PageTitle)
@@ -75,14 +75,27 @@ Private Sub IPage_InitPage(ctx As clsAppContext, pg As MSForms.Page)
     Set cmdBulkLoadFile = BindControl(pg, "cmdAdmBulkLoad", IPage_PageTitle)
     Set cmdBulkCheck = BindControl(pg, "cmdAdmBulkCheck", IPage_PageTitle)
     Set cmdBulkProcess = BindControl(pg, "cmdAdmBulkProcess", IPage_PageTitle)
-     Set txtReopenClaimID = BindControl(pg, "txtAdmReopenID", IPage_PageTitle)
+    Set txtReopenClaimID = BindControl(pg, "txtAdmReopenID", IPage_PageTitle)
     Set txtReopenReason = BindControl(pg, "txtAdmReopenReason", IPage_PageTitle)
     Set cmdCheckStatus = BindControl(pg, "cmdAdmCheckStatus", IPage_PageTitle)
     Set cmdReopen = BindControl(pg, "cmdAdmReopen", IPage_PageTitle)
     Set lblReopenStatus = BindControl(pg, "lblAdmReopenStatus", IPage_PageTitle)
 
-    txtReopenReason.Multiline = True
-    cmdReopen.enabled = False        ' until a Closed claim is confirmed
+    txtReopenReason.MultiLine = True
+    cmdReopen.Enabled = False        ' until a Closed claim is confirmed
+
+    Set cboArchiveAge = BindControl(pg, "cboAdmArchiveAge", IPage_PageTitle)
+    Set chkArchiveClosedOnly = BindControl(pg, "chkAdmArchiveClosedOnly", IPage_PageTitle)
+    Set cmdArchivePreview = BindControl(pg, "cmdAdmArchivePreview", IPage_PageTitle)
+    Set cmdArchiveRun = BindControl(pg, "cmdAdmArchiveRun", IPage_PageTitle)
+    Set lblArchivePreview = BindControl(pg, "lblAdmArchivePreview", IPage_PageTitle)
+
+    cboArchiveAge.List = Array("Older than 2 months", "Older than 3 months", _
+                                "Older than 4 months", "Older than 5 months", _
+                                "Older than 6 months", "Any age")
+    cboArchiveAge.Value = "Older than 6 months"
+    chkArchiveClosedOnly.Value = True       ' the safe default
+    cmdArchiveRun.Enabled = False            ' until a preview has been run
 
     Set lblAdminUser = BindOptional(pg, "lblAdmUser")
     Set lblBulkInfo = BindOptional(pg, "lblAdmBulkInfo")
@@ -90,11 +103,11 @@ End Sub
 
 Private Sub IPage_OnActivate()
     If Not lblAdminUser Is Nothing Then
-        lblAdminUser.caption = "Signed in as: " & m_ctx.userName & _
-                               IIf(m_ctx.isAdmin, " (Admin)", " (User)")
+        lblAdminUser.Caption = "Signed in as: " & m_ctx.UserName & _
+                               IIf(m_ctx.IsAdmin, " (Admin)", " (User)")
     End If
     If Not lblBulkInfo Is Nothing Then
-        lblBulkInfo.caption = "Bulk entry uses the '" & BULK_SHEET & "' sheet. " & _
+        lblBulkInfo.Caption = "Bulk entry uses the '" & BULK_SHEET & "' sheet. " & _
                               "Valid rows are imported and removed; rows with problems stay " & _
                               "with the reason in the ValidationError column."
     End If
@@ -109,7 +122,7 @@ Private Sub cmdChangeSite_Click()
 
     ' ChangeUpdatedSite re-checks admin rights itself - this tab being
     ' visible is not what authorises the change.
-    If m_ctx.repo.ChangeUpdatedSite(Trim$(txtSiteClaimID.Value), Trim$(txtNewSite.Value)) Then
+    If m_ctx.Repo.ChangeUpdatedSite(Trim$(txtSiteClaimID.Value), Trim$(txtNewSite.Value)) Then
         m_ctx.InvalidateClaims
         m_ctx.SetStatus "Site updated for " & Trim$(txtSiteClaimID.Value) & "."
         txtSiteClaimID.Value = ""
@@ -117,8 +130,7 @@ Private Sub cmdChangeSite_Click()
     End If
 End Sub
 
-
- '---------------------------------------------------------------------
+' ---------------------------------------------------------------------
 ' Reopen a closed claim.
 '
 ' Two steps on purpose: check first, then reopen. The Reopen button
@@ -129,28 +141,28 @@ End Sub
 Private Sub cmdCheckStatus_Click()
     Dim c As clsClaim
 
-    cmdReopen.enabled = False
-    lblReopenStatus.caption = ""
+    cmdReopen.Enabled = False
+    lblReopenStatus.Caption = ""
 
     If Trim$(txtReopenClaimID.Value) = "" Then
         MsgBox "Enter a Claim ID to check.", vbExclamation, "Nothing to Check"
         Exit Sub
     End If
 
-    Set c = m_ctx.repo.FindClaim(Trim$(txtReopenClaimID.Value))
+    Set c = m_ctx.Repo.FindClaim(Trim$(txtReopenClaimID.Value))
 
     If c Is Nothing Then
-        lblReopenStatus.caption = "No claim found with that ID."
+        lblReopenStatus.Caption = "No claim found with that ID."
         Exit Sub
     End If
 
-    lblReopenStatus.caption = c.ClaimProviderName & " | " & c.claimSite & _
+    lblReopenStatus.Caption = c.ClaimProviderName & " | " & c.ClaimSite & _
                               " | Status: " & c.ClaimStatus & _
-                              " | Calls: " & c.attempt & _
+                              " | Calls: " & c.Attempt & _
                               IIf(c.IsClosed, " | Closed " & FormatDateOrBlank(c.ClaimClosedDate), "")
 
     If c.IsClosed Then
-        cmdReopen.enabled = True
+        cmdReopen.Enabled = True
         m_ctx.SetStatus "Claim is Closed - enter a reason and reopen."
         txtReopenReason.SetFocus
     Else
@@ -177,14 +189,118 @@ Private Sub cmdReopen_Click()
               "The reason is recorded in the claim history against your name.", _
               vbYesNo + vbQuestion, "Confirm Reopen") = vbNo Then Exit Sub
 
-    If m_ctx.repo.ReopenClaim(claimID, Trim$(txtReopenReason.Value)) Then
+    If m_ctx.Repo.ReopenClaim(claimID, Trim$(txtReopenReason.Value)) Then
         m_ctx.InvalidateClaims
         m_ctx.SetStatus "Claim " & claimID & " reopened and set back to Pending."
         txtReopenClaimID.Value = ""
         txtReopenReason.Value = ""
-        lblReopenStatus.caption = ""
-        cmdReopen.enabled = False
+        lblReopenStatus.Caption = ""
+        cmdReopen.Enabled = False
     End If
+End Sub
+
+' ---------------------------------------------------------------------
+' Archiving.
+'
+' Preview is mandatory: the Run button stays disabled until a preview
+' has been taken, and any change to the criteria disables it again. An
+' admin should never be one stray click away from moving hundreds of
+' rows they haven't seen a count for.
+' ---------------------------------------------------------------------
+Private Function BuildArchiveService() As clsArchiveService
+    Dim svc As New clsArchiveService
+    svc.OlderThanMonths = MonthsFromCombo()
+    svc.ClosedOnly = CBool(chkArchiveClosedOnly.Value)
+    Set BuildArchiveService = svc
+End Function
+
+Private Function MonthsFromCombo() As Long
+    Select Case CStr(cboArchiveAge.Value)
+        Case "Older than 2 months": MonthsFromCombo = 2
+        Case "Older than 3 months": MonthsFromCombo = 3
+        Case "Older than 4 months": MonthsFromCombo = 4
+        Case "Older than 5 months": MonthsFromCombo = 5
+        Case "Older than 6 months": MonthsFromCombo = 6
+        Case Else: MonthsFromCombo = 0      ' "Any age" - no date filter
+    End Select
+End Function
+
+Private Sub cboArchiveAge_Change()
+    InvalidatePreview
+End Sub
+
+Private Sub chkArchiveClosedOnly_Click()
+    InvalidatePreview
+End Sub
+
+Private Sub InvalidatePreview()
+    cmdArchiveRun.Enabled = False
+    lblArchivePreview.Caption = "Criteria changed - preview again before archiving."
+End Sub
+
+Private Sub cmdArchivePreview_Click()
+    Dim svc As clsArchiveService
+    Dim n As Long
+    Dim oldest As Variant
+
+    Set svc = BuildArchiveService()
+    n = svc.CountMatching(m_ctx.Claims(), oldest)
+
+    If n = 0 Then
+        lblArchivePreview.Caption = "No claims match these criteria - nothing to archive."
+        cmdArchiveRun.Enabled = False
+        Exit Sub
+    End If
+
+    lblArchivePreview.Caption = n & " claim(s) would be archived, with all their call history." & _
+        IIf(IsDate(oldest), "  Oldest raised " & Format$(oldest, "dd-mmm-yyyy") & ".", "") & _
+        IIf(Not CBool(chkArchiveClosedOnly.Value), _
+            "  WARNING: Pending claims are included - callers will lose sight of live work.", "")
+
+    cmdArchiveRun.Enabled = True
+    m_ctx.SetStatus "Preview ready - " & n & " claim(s) match."
+End Sub
+
+Private Sub cmdArchiveRun_Click()
+    Dim svc As clsArchiveService
+    Dim n As Long, moved As Long, histMoved As Long
+    Dim oldest As Variant
+    Dim warn As String
+
+    Set svc = BuildArchiveService()
+    n = svc.CountMatching(m_ctx.Claims(), oldest)
+
+    If n = 0 Then
+        lblArchivePreview.Caption = "Nothing matches any more - re-run the preview."
+        cmdArchiveRun.Enabled = False
+        Exit Sub
+    End If
+
+    If Not CBool(chkArchiveClosedOnly.Value) Then
+        warn = vbCrLf & vbCrLf & "This includes PENDING claims. Callers will no longer see them " & _
+               "in the working sheets."
+    End If
+
+    If MsgBox(n & " claim(s) and all their call history will be moved to " & _
+              SHEET_ARC_CLAIMS & " / " & SHEET_ARC_HISTORY & _
+              " and removed from the working sheets." & warn & vbCrLf & vbCrLf & _
+              "This cannot be undone from the app - the rows would have to be moved back " & _
+              "by hand." & vbCrLf & vbCrLf & "Continue?", _
+              vbYesNo + vbExclamation, "Confirm Archive") = vbNo Then Exit Sub
+
+    m_ctx.SetStatus "Archiving - this may take a moment..."
+    moved = svc.ArchiveMatching(histMoved)
+
+    If moved > 0 Then
+        m_ctx.InvalidateClaims
+        lblArchivePreview.Caption = moved & " claim(s) and " & histMoved & _
+                                     " history row(s) archived."
+        m_ctx.SetStatus "Archive complete."
+    Else
+        m_ctx.SetStatus "Nothing was archived."
+    End If
+
+    cmdArchiveRun.Enabled = False
 End Sub
 
 ' --- Bulk entry: these run against the bulkClaimAdd worksheet ---
@@ -208,4 +324,3 @@ Private Sub cmdBulkProcess_Click()
     m_ctx.InvalidateClaims
     m_ctx.SetStatus "Bulk processing finished - see the " & BULK_SHEET & " sheet."
 End Sub
-

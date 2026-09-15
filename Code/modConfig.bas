@@ -9,12 +9,14 @@ Option Explicit
 ' =====================================================================
 
 ' >>> UPDATE THIS to the real UNC/share path before distributing <<<
-Public Const DB_PATH As String = "C:\Users\pc\Documents\GitHub\Caller_Tracker\DB\Claim_Calling_Tracker.xlsx"
+Public Const DB_PATH As String = "\\SharedDrive\ClaimTracker\Claim_Calling_Tracker.xlsx"
 
 Public Const SHEET_CLAIMS As String = "Claims"
 Public Const SHEET_HISTORY As String = "History"
 Public Const SHEET_USERS As String = "Users"
 Public Const SHEET_CONFIG As String = "Config"
+Public Const SHEET_ARC_CLAIMS As String = "ArchivedClaims"
+Public Const SHEET_ARC_HISTORY As String = "ArchivedHistory"
 
 Public Const STATUS_PENDING As String = "Pending"
 Public Const STATUS_CLOSED As String = "Closed"
