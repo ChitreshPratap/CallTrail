@@ -76,7 +76,7 @@ End Sub
 
 Private Sub DoSearch()
     
-    Dim Repo As New ClsClaimRepository
+    Dim repo As New ClsClaimRepository
     Dim idToFind As String
 
     idToFind = Trim$(txtSearchID.Value)
@@ -92,7 +92,7 @@ Private Sub DoSearch()
     lblStatusBar.caption = "Searching..."
     DoEvents
 
-    Set m_claim = Repo.FindClaim(idToFind)
+    Set m_claim = repo.FindClaim(idToFind)
 
     If m_claim Is Nothing Then
         ClearAll
@@ -164,14 +164,14 @@ Private Sub ApplyPermissions()
 End Sub
 
 Private Sub LoadHistory(ByVal claimID As String)
-    Dim Repo As New ClsClaimRepository
+    Dim repo As New ClsClaimRepository
     Dim histData As Variant
     Dim hist As Collection
 
     lstHistory.Clear
 
     On Error GoTo Fail
-    Set hist = Repo.GetHistory(claimID)
+    Set hist = repo.GetHistory(claimID)
     histData = HistoryToListArray(hist)
     If Not IsEmpty(histData) Then lstHistory.List = histData
 
@@ -214,7 +214,7 @@ Private Sub MarkDirty()
 End Sub
 
 Private Sub cmdSave_Click()
-    Dim Repo As New ClsClaimRepository
+    Dim repo As New ClsClaimRepository
     Dim siteDenied As Boolean
     Dim creationDate As Date
 
@@ -251,7 +251,7 @@ Private Sub cmdSave_Click()
     On Error GoTo Fail
     Me.MousePointer = fmMousePointerHourGlass
 
-    If Repo.UpdateClaimDetails(m_claim.claimID, _
+    If repo.UpdateClaimDetails(m_claim.claimID, _
                                 Trim$(txtSite.Value), _
                                 Trim$(txtProvider.Value), _
                                 Trim$(txtQuery.Value), _
@@ -262,7 +262,7 @@ Private Sub cmdSave_Click()
         ' Reload from the database rather than trusting the form's copy,
         ' so the audit fields shown (LastUpdated etc.) are what was
         ' actually written.
-        Set m_claim = Repo.FindClaim(m_claim.claimID)
+        Set m_claim = repo.FindClaim(m_claim.claimID)
         If Not m_claim Is Nothing Then PopulateForm m_claim
 
         Me.MousePointer = fmMousePointerDefault
@@ -281,7 +281,7 @@ End Sub
 
 ' Throws away edits and re-reads the claim from the database
 Private Sub cmdRevert_Click()
-    Dim Repo As New ClsClaimRepository
+    Dim repo As New ClsClaimRepository
 
     If m_claim Is Nothing Then Exit Sub
     If Not m_dirty Then Exit Sub
@@ -289,7 +289,7 @@ Private Sub cmdRevert_Click()
     If MsgBox("Discard your unsaved changes to this claim?", _
               vbYesNo + vbQuestion, "Discard Changes") = vbNo Then Exit Sub
 
-    Set m_claim = Repo.FindClaim(m_claim.claimID)
+    Set m_claim = repo.FindClaim(m_claim.claimID)
     If m_claim Is Nothing Then
         ClearAll
         lblStatusBar.caption = "This claim no longer exists in the database."

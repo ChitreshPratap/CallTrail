@@ -40,8 +40,8 @@ Private Sub Class_Initialize()
     m_roleChecked = False
 End Sub
 
-Public Property Get Repo() As ClsClaimRepository
-    Set Repo = m_repo
+Public Property Get repo() As ClsClaimRepository
+    Set repo = m_repo
 End Property
 
 ' ---------------------------------------------------------------------
@@ -91,8 +91,8 @@ Public Property Get isAdmin() As Boolean
     isAdmin = m_isAdmin
 End Property
 
-Public Property Get UserName() As String
-    UserName = GetWindowsUserName()
+Public Property Get userName() As String
+    userName = GetWindowsUserName()
 End Property
 
 ' ---------------------------------------------------------------------

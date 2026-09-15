@@ -66,7 +66,7 @@ Private Sub ShowDashboard():             MsgBox "ShowDashboard":            End 
 Private Sub SyncWithCentral():           gLastSync = Now:                   End Sub
 Private Sub ShowAdminPanel():            MsgBox "ShowAdminPanel":           End Sub
 Private Sub ShowGuide():                 MsgBox "ShowGuide":                End Sub
-Private Sub ApplyStatusFilter(ByVal s As String): MsgBox "Filter status: " & s: End Sub
+Private Sub ApplyStatusFilter(ByVal S As String): MsgBox "Filter status: " & S: End Sub
 Private Sub ApplyView(ByVal v As String):         MsgBox "Apply view: " & v:    End Sub
 
 

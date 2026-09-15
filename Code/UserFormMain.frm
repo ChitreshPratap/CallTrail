@@ -148,11 +148,11 @@ Private Sub lblCloseDashboard_Click()
         .width = mainWindowWidth
     End With
     
-    With framePageProcess
-        .Left = Me.frameMain.Left
-        .width = mainWindowWidth
-    End With
-    
+'    With framePageProcess
+'        .Left = Me.frameMain.Left
+'        .width = mainWindowWidth
+'    End With
+'
     With framePageHome
         .Left = Me.frameMain.Left
         .width = mainWindowWidth

@@ -92,7 +92,7 @@ Private Sub FindClaim()
     End If
 
     m_ctx.SetStatus "Looking up " & idToFind & "..."
-    Set m_claim = m_ctx.Repo.FindClaim(idToFind)
+    Set m_claim = m_ctx.repo.FindClaim(idToFind)
 
     If m_claim Is Nothing Then
         ClearClaim
@@ -136,7 +136,7 @@ End Sub
 Private Sub LoadHistory(ByVal claimID As String)
     Dim histData As Variant
     lstHistory.Clear
-    histData = HistoryToListArray(m_ctx.Repo.GetHistory(claimID))
+    histData = HistoryToListArray(m_ctx.repo.GetHistory(claimID))
     If Not IsEmpty(histData) Then lstHistory.List = histData
 End Sub
 
@@ -163,13 +163,13 @@ Private Sub cmdLog_Click()
                   vbYesNo + vbQuestion, "Confirm Close") = vbNo Then Exit Sub
     End If
 
-    If m_ctx.Repo.LogCallAndUpdateStatus(m_claim.claimID, Trim$(txtComment.Value), _
+    If m_ctx.repo.LogCallAndUpdateStatus(m_claim.claimID, Trim$(txtComment.Value), _
                                           CStr(cboStatus.Value)) Then
         m_ctx.InvalidateClaims
 
         ' Re-read so the attempt count and status shown are what was
         ' actually written, not what we assume was written.
-        Set m_claim = m_ctx.Repo.FindClaim(m_claim.claimID)
+        Set m_claim = m_ctx.repo.FindClaim(m_claim.claimID)
         If Not m_claim Is Nothing Then ShowClaim
 
         m_ctx.SetStatus "Call logged."

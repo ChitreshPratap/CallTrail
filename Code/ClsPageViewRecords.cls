@@ -332,7 +332,7 @@ Private Sub ShowDetail(c As clsClaim)
     ' History is fetched per selection, not preloaded - preloading every
     ' claim's calls would mean pulling the whole History sheet to show one.
     lstHistory.Clear
-    Set m_shown_history = m_ctx.Repo.GetHistory(c.claimID)
+    Set m_shown_history = m_ctx.repo.GetHistory(c.claimID)
     histData = HistoryToListArray(m_shown_history)
     If Not IsEmpty(histData) Then lstHistory.List = histData
     

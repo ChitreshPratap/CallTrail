@@ -135,7 +135,7 @@ Private Sub cmdSave_Click()
 '    End If
     
     
-    If m_ctx.Repo.AddClaim(tClaimId, tClaimSite, _
+    If m_ctx.repo.AddClaim(tClaimId, tClaimSite, _
                             tProviderName, tClaimQuery, _
                             creationDate) Then
  

@@ -5,7 +5,7 @@ Function getStyledBox(txtBox As MSForms.TextBox, Optional placeHolderText As Str
 
     Dim styl As TextBoxStyle1
     Set styl = New TextBoxStyle1
-    styl.init txtBox, placeholder:=placeHolderText
+    styl.Init txtBox, placeholder:=placeHolderText
     Set getStyledBox = styl
     
 End Function
@@ -21,7 +21,7 @@ Function getStyledBoxULine(txtBox As MSForms.TextBox, Optional placeHolderText A
     
     Dim styledBox As TsTextFieldStyle2
     Set styledBox = New TsTextFieldStyle2
-    styledBox.init txtBox, placeHolderText
+    styledBox.Init txtBox, placeHolderText
     Set getStyledBoxULine = styledBox
     
 End Function

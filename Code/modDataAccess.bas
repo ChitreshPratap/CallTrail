@@ -240,7 +240,7 @@ Fail:
     UpdateClaimDetails = False
 End Function
 
-' ---------------------------------------------------------------------
+ ---------------------------------------------------------------------
 ' Admin-only: reopen a Closed claim so calling can resume.
 '
 ' Unlike UpdateClaimDetails, this DOES write a history row. Reopening is
@@ -334,6 +334,7 @@ Fail:
     If Not wb Is Nothing Then CloseCentralDB wb, False
     ReopenClaim = False
 End Function
+
 
 ' ---------------------------------------------------------------------
 ' Read helpers for populating the UI / dashboards.

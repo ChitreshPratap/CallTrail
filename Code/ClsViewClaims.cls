@@ -80,8 +80,8 @@ Public Sub LoadClaimsFromDatabase()
     Dim uform As UserFormMain
     Set uform = var_frm
     
-    Dim Repo As ClsClaimRepository
-    Set Repo = New ClsClaimRepository
+    Dim repo As ClsClaimRepository
+    Set repo = New ClsClaimRepository
 
     On Error GoTo Fail
     'Me.MousePointer = fmMousePointerHourGlass
@@ -89,7 +89,7 @@ Public Sub LoadClaimsFromDatabase()
     uform.lblStatusBar.caption = "Loading claims..."
     DoEvents
 
-    Set var_m_allClaims = Repo.GetAllClaims()
+    Set var_m_allClaims = repo.GetAllClaims()
 
     uform.MousePointer = fmMousePointerDefault
     Exit Sub
@@ -242,7 +242,7 @@ Private Sub ShowClaimDetail(c As clsClaim)
 End Sub
 
 Private Sub LoadHistoryFor(ByVal claimID As String)
-    Dim Repo As New ClsClaimRepository
+    Dim repo As New ClsClaimRepository
     Dim histData As Variant
 
     lstHistory.Clear
@@ -250,7 +250,7 @@ Private Sub LoadHistoryFor(ByVal claimID As String)
     On Error GoTo Fail
     Me.MousePointer = fmMousePointerHourGlass
 
-    histData = HistoryToListArray(Repo.GetHistory(claimID))
+    histData = HistoryToListArray(repo.GetHistory(claimID))
     If Not IsEmpty(histData) Then lstHistory.List = histData
 
     Me.MousePointer = fmMousePointerDefault

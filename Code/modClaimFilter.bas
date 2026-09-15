@@ -33,7 +33,7 @@ End Enum
 ' a claim stamped 14:30 on the To date isn't silently excluded - that
 ' off-by-one is easy to miss and makes users think records are missing.
 ' ---------------------------------------------------------------------
-Public Function FilterClaims(Source As Collection, _
+Public Function FilterClaims(source As Collection, _
                               Optional ByVal statusFilter As String = "", _
                               Optional ByVal dateField As ClaimDateField = cdfCreationDate, _
                               Optional ByVal dateFrom As Date = 0, _
@@ -47,12 +47,12 @@ Public Function FilterClaims(Source As Collection, _
     Dim needle As String
 
     Set FilterClaims = result
-    If Source Is Nothing Then Exit Function
+    If source Is Nothing Then Exit Function
 
     statusFilter = Trim$(statusFilter)
     needle = Trim$(LCase$(searchText))
 
-    For Each c In Source
+    For Each c In source
         keep = True
 
         ' --- status ---
@@ -112,17 +112,17 @@ End Function
 ' Assigning ListBox.List = <array> in ONE go is dramatically faster than
 ' looping AddItem, which repaints the control on every single row.
 ' ---------------------------------------------------------------------
-Public Function ClaimsToListArray(Source As Collection) As Variant
+Public Function ClaimsToListArray(source As Collection) As Variant
     Dim arr() As Variant
     Dim c As clsClaim
     Dim i As Long
 
-    If Source Is Nothing Then Exit Function
-    If Source.Count = 0 Then Exit Function
+    If source Is Nothing Then Exit Function
+    If source.Count = 0 Then Exit Function
 
-    ReDim arr(0 To Source.Count - 1, 0 To 5)  ' 0-based: ListBox expects this
+    ReDim arr(0 To source.Count - 1, 0 To 5)  ' 0-based: ListBox expects this
     i = 0
-    For Each c In Source
+    For Each c In source
         arr(i, 0) = c.claimID
         arr(i, 1) = c.claimSite
         arr(i, 2) = c.ClaimProviderName
@@ -139,18 +139,18 @@ End Function
 ' Converts a history collection into a 2D array for a ListBox.
 ' Columns: CallerName | CallDateTime | Status | Comment
 ' ---------------------------------------------------------------------
-Public Function HistoryToListArray(Source As Collection) As Variant
+Public Function HistoryToListArray(source As Collection) As Variant
     Dim arr() As Variant
     Dim h As clsHistoryEntry
     Dim i As Long
 
-    If Source Is Nothing Then Exit Function
-    If Source.Count = 0 Then Exit Function
+    If source Is Nothing Then Exit Function
+    If source.Count = 0 Then Exit Function
 
-    ReDim arr(0 To Source.Count - 1, 0 To 3)
+    ReDim arr(0 To source.Count - 1, 0 To 3)
     i = 0
-    For Each h In Source
-        arr(i, 0) = h.CallerName
+    For Each h In source
+        arr(i, 0) = h.callerName
         arr(i, 1) = Format$(h.CallDateTime, "dd-mmm-yyyy hh:nn")
         arr(i, 2) = h.CallerStatus
         arr(i, 3) = h.CallerComment
@@ -162,9 +162,9 @@ End Function
 
 ' Small helper so the form doesn't repeat this parsing everywhere.
 ' Returns 0 for blank/invalid input, which the filter reads as "no limit".
-Public Function ParseDateOrZero(ByVal s As String) As Date
-    s = Trim$(s)
-    If s = "" Then Exit Function
-    If Not IsDate(s) Then Exit Function
-    ParseDateOrZero = CDate(s)
+Public Function ParseDateOrZero(ByVal S As String) As Date
+    S = Trim$(S)
+    If S = "" Then Exit Function
+    If Not IsDate(S) Then Exit Function
+    ParseDateOrZero = CDate(S)
 End Function

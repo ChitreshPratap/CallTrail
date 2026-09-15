@@ -140,7 +140,7 @@ Private Sub DoSearch()
     If Not ConfirmDiscardIfDirty() Then Exit Sub
 
     m_ctx.SetStatus "Searching..."
-    Set m_claim = m_ctx.Repo.FindClaim(idToFind)
+    Set m_claim = m_ctx.repo.FindClaim(idToFind)
 
     If m_claim Is Nothing Then
         ClearAll
@@ -174,7 +174,7 @@ Private Sub Populate()
     txtCreationDate.Value = Format$(m_claim.ClaimCreationDate, "dd-mmm-yyyy")
     txtUpdatedSite.Value = m_claim.ClaimUpdatedSite
 
-    Set hist = m_ctx.Repo.GetHistory(m_claim.claimID)
+    Set hist = m_ctx.repo.GetHistory(m_claim.claimID)
     lstHistory.Clear
     histData = HistoryToListArray(hist)
     If Not IsEmpty(histData) Then lstHistory.List = histData
@@ -253,7 +253,7 @@ Private Sub cmdSave_Click()
         Exit Sub
     End If
 
-    If m_ctx.Repo.UpdateClaimDetails(m_claim.claimID, Trim$(txtSite.Value), _
+    If m_ctx.repo.UpdateClaimDetails(m_claim.claimID, Trim$(txtSite.Value), _
                                       Trim$(txtProvider.Value), Trim$(txtQuery.Value), _
                                       creationDate, Trim$(txtUpdatedSite.Value), _
                                       siteDenied) Then
@@ -261,7 +261,7 @@ Private Sub cmdSave_Click()
 
         ' Re-read rather than trusting our copy, so the audit fields on
         ' screen show what was actually written.
-        Set m_claim = m_ctx.Repo.FindClaim(m_claim.claimID)
+        Set m_claim = m_ctx.repo.FindClaim(m_claim.claimID)
         If Not m_claim Is Nothing Then Populate
 
         m_ctx.SetStatus "Changes saved." & _
@@ -278,7 +278,7 @@ Private Sub cmdRevert_Click()
     If MsgBox("Discard your unsaved changes to this claim?", _
               vbYesNo + vbQuestion, "Discard Changes") = vbNo Then Exit Sub
 
-    Set m_claim = m_ctx.Repo.FindClaim(m_claim.claimID)
+    Set m_claim = m_ctx.repo.FindClaim(m_claim.claimID)
     If m_claim Is Nothing Then
         ClearAll
         m_ctx.SetStatus "This claim no longer exists in the database."
