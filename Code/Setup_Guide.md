@@ -31,6 +31,8 @@ This split is deliberate: if the data file ever got macros in it, every user ope
    - `modBulkImport.bas`
    - `modClaimFilter.bas`
    - `modPageHelpers.bas`
+   - `modDownload.bas`
+   - `modRepair.bas` (one-off repair tool — see section 7f)
    - For the tabbed shell (section 7): `IPage.cls`, `clsAppContext.cls`, `clsFormStyler.cls`, `clsArchiveService.cls`, `clsPageLogCall.cls`, `clsPageSearch.cls`, `clsPageView.cls`, `clsPageAddClaim.cls`, `clsPageAdmin.cls`
    - **Optional, object-oriented layer** (see section 2a below): `clsClaim.cls`, `clsHistoryEntry.cls`, `clsClaimRepository.cls`
 
@@ -810,6 +812,72 @@ The preview list is capped at 5,000 rows — a UserForm ListBox degrades badly w
 Moving rows back has to be done by hand in Excel. That's deliberate — a one-click restore would need to handle ID collisions with claims added since, and getting that subtly wrong is worse than a manual process an admin does rarely and carefully. The confirmation dialog says so before anything moves.
 
 If you find yourself needing to un-archive regularly, that's a signal the age threshold is too aggressive rather than a reason to build the feature.
+
+## 7e. Downloading a snapshot of the database
+
+`modDownload.bas` pulls a full copy of the central database into **this** workbook — one local sheet per source sheet — for offline analysis, pivot tables, ad-hoc reporting, or taking a snapshot before something risky like an archive run.
+
+| Macro | Does |
+|---|---|
+| `modMain.DownloadDatabase` | All four sheets — the main one |
+| `modDownload.DownloadClaimsOnly` | Just claims |
+| `modDownload.DownloadHistoryOnly` | Just call history |
+| `modDownload.DownloadArchivesOnly` | Both archive sheets |
+
+Creates or replaces: `DL_Claims`, `DL_History`, `DL_ArchivedClaims`, `DL_ArchivedHistory`, plus a `DL_Info` sheet.
+
+Wire a worksheet button to `modMain.DownloadDatabase`. Optionally add a `cmdAdmDownload` button to the Admin tab — it's bound with `BindOptional`, so leaving it off doesn't break the page.
+
+### Three implementation choices worth knowing
+
+**Opens read-only.** A download only reads, so it takes no write lock. A read/write open would block callers trying to log a call for as long as the copy runs — and on a large database over a share drive, that's exactly when you don't want to be holding the file. (`OpenCentralDBReadOnly` is new in `modUtils.bas`.)
+
+**One open for all four sheets.** Opening per sheet would mean four round trips to the network share for nothing.
+
+**Bulk array transfer, not `Range.Copy`.** Copy/paste carries formatting, uses the clipboard (which the user can clobber mid-run), and is far slower. Each sheet moves in one read and one write, values only.
+
+### The `DL_Info` sheet
+
+Records when the snapshot was taken, by whom, and the row counts. This exists because a downloaded sheet sitting in a workbook for a week looks exactly like one pulled five minutes ago — and sooner or later someone reports from stale data believing it's current. The timestamp makes that visible.
+
+### Two limits
+
+**Snapshots don't refresh, and don't write back.** Editing `DL_Claims` changes nothing in the central database. It's a copy, not a connection.
+
+**A sheet can't hold more rows than Excel allows (~1,048,576).** If a source sheet exceeds that, the download stops with a message telling you to archive older records — rather than failing with a cryptic subscript error. In practice, hitting this means the archive threshold is far too lax.
+
+## 7f. Fixing blank rows / "key is already associated" error
+
+If you ran an archive with an earlier build and now see:
+
+> Could not read claims. This key is already associated with an element of this collection.
+
+…along with blank rows left behind in `Claims`, this is that bug. Both halves are fixed; here's what happened and what to do.
+
+### What went wrong
+
+`RewriteSheet` used `ClearContents`, which blanks cells but **leaves the rows in place**. `Claims` and `History` both carry Excel Tables (`tblClaims`, `tblHistory`), so the Table kept its old size with empty rows inside it. `GetAllClaims` then read those blank rows, each produced an empty `ClaimID`, and the second empty key collided in the keyed Collection.
+
+### What's fixed
+
+| Fix | Where |
+|---|---|
+| Surplus rows are now **deleted**, not just cleared | `clsArchiveService.RewriteSheet` |
+| The Excel Table is **resized** to the new data extent | `clsArchiveService.ResizeListObject` |
+| Blank rows are **skipped** on read | `clsClaimRepository.GetAllClaims` / `GetHistory` |
+| Duplicate Claim IDs no longer crash the read | `GetAllClaims` — loads the first, reports the rest |
+
+The last two matter independently of the archive bug: a reporting read is the wrong place to fall over because someone hand-edited a sheet.
+
+### Cleaning up a database already affected
+
+Import `modRepair.bas` and run `modMain.RepairBlankRows` **once**. Admin-only. It removes rows whose key column is empty, deletes the surplus, resizes the Table, and reports the counts. Safe to run again — it does nothing if there's nothing to fix.
+
+Then reload the app.
+
+### Worth checking
+
+If the failed archive ran partway, claims could exist in **both** `Claims` and `ArchivedClaims`. The archive deliberately writes and saves before deleting, so nothing is lost — but do check for duplicates. The new duplicate-ID warning in `GetAllClaims` will tell you if any are still in the working sheet.
 
 ## 8. Distribute
 Save `CallTrail_App.xlsm`, digitally sign it or have IT trust the location, and send a copy to each caller. Everyone points at the same `DB_PATH`.
