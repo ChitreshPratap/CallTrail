@@ -123,6 +123,27 @@ Public Function CountMatching(claims As Collection, Optional ByRef oldestDate As
 End Function
 
 ' ---------------------------------------------------------------------
+' Preview: the actual claims that would be archived, so the admin can
+' see and inspect them rather than trusting a bare count.
+'
+' Returns full clsClaim objects, so the caller can show any column and
+' can look up each claim's history.
+' ---------------------------------------------------------------------
+Public Function GetMatching(claims As Collection) As Collection
+    Dim result As New Collection
+    Dim c As clsClaim
+
+    Set GetMatching = result
+    If claims Is Nothing Then Exit Function
+
+    For Each c In claims
+        If Matches(c) Then result.Add c
+    Next c
+
+    Set GetMatching = result
+End Function
+
+' ---------------------------------------------------------------------
 ' Does the move. Returns the number of claims archived.
 ' historyMoved reports how many history rows went with them.
 ' ---------------------------------------------------------------------
@@ -301,24 +322,62 @@ Private Sub AppendBlock(ws As Worksheet, data As Variant, ByVal n As Long, ByVal
     ws.Range(ws.Cells(firstRow, 1), ws.Cells(firstRow + n - 1, cols)).Value = trimmed
 End Sub
 
-' Clears the data area (headers untouched) and writes the kept rows back.
+' Replaces the sheet's data with only the kept rows.
+'
+' ClearContents alone is NOT enough, and that was a real bug: it blanks
+' the cells but leaves the rows there. On a sheet carrying an Excel Table
+' (Claims and History both do) the Table keeps its old size with empty
+' rows inside it, and every later read then picks up blank rows. A blank
+' row yields an empty ClaimID, and two of those collide when claims are
+' keyed by ID - producing "This key is already associated with an element
+' of this collection".
+'
+' So: write the survivors, then DELETE the surplus rows outright, then
+' resize any ListObject to match.
 Private Sub RewriteSheet(ws As Worksheet, data As Variant, ByVal n As Long, _
                           ByVal cols As Long, ByVal oldLastRow As Long)
     Dim trimmed() As Variant
     Dim r As Long, k As Long
+    Dim firstSurplus As Long
 
-    If oldLastRow >= 2 Then
-        ws.Range(ws.Cells(2, 1), ws.Cells(oldLastRow, cols)).ClearContents
+    If oldLastRow < 2 Then Exit Sub
+
+    ' --- write the kept rows back at the top ---
+    If n > 0 Then
+        ReDim trimmed(1 To n, 1 To cols)
+        For r = 1 To n
+            For k = 1 To cols
+                trimmed(r, k) = data(r, k)
+            Next k
+        Next r
+        ws.Range(ws.Cells(2, 1), ws.Cells(n + 1, cols)).Value = trimmed
     End If
 
-    If n = 0 Then Exit Sub
+    ' --- delete whatever is left below them ---
+    firstSurplus = n + 2
+    If firstSurplus <= oldLastRow Then
+        ws.Rows(firstSurplus & ":" & oldLastRow).Delete Shift:=xlUp
+    End If
 
-    ReDim trimmed(1 To n, 1 To cols)
-    For r = 1 To n
-        For k = 1 To cols
-            trimmed(r, k) = data(r, k)
-        Next k
-    Next r
+    ResizeListObject ws, n, cols
+End Sub
 
-    ws.Range(ws.Cells(2, 1), ws.Cells(n + 1, cols)).Value = trimmed
+' If the sheet has an Excel Table, point it at the new data extent.
+' A Table left spanning deleted rows reports phantom empty rows to
+' anything that reads it through the ListObject.
+Private Sub ResizeListObject(ws As Worksheet, ByVal n As Long, ByVal cols As Long)
+    Dim lo As ListObject
+    Dim newLast As Long
+
+    On Error Resume Next
+    If ws.ListObjects.Count = 0 Then Exit Sub
+    Set lo = ws.ListObjects(1)
+    If lo Is Nothing Then Exit Sub
+
+    ' A Table must keep at least one body row, so never shrink past row 2
+    newLast = n + 1
+    If newLast < 2 Then newLast = 2
+
+    lo.Resize ws.Range(ws.Cells(1, 1), ws.Cells(newLast, cols))
+    On Error GoTo 0
 End Sub

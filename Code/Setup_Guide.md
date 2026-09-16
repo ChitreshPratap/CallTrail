@@ -776,9 +776,16 @@ Two new sheets, mirroring the source columns plus `ArchivedDate` and `ArchivedBy
 | `chkAdmArchiveClosedOnly` | CheckBox | **Defaults to ticked** |
 | `cmdAdmArchivePreview` | CommandButton | "Preview" |
 | `lblAdmArchivePreview` | Label | Count, oldest claim, warnings |
+| `lstAdmArchiveClaims` | ListBox | **The claims that would be archived.** 6 columns, set in code |
+| `lstAdmArchiveHistory` | ListBox | Call history of the selected claim. 4 columns, set in code |
+| `lblAdmArchiveHistCount` | Label | "N history row(s) for X would move with it" |
 | `cmdAdmArchiveRun` | CommandButton | "Archive Now" — starts disabled |
 
-**Preview is mandatory.** Run stays disabled until a preview has been taken, and changing any criterion disables it again. An admin should never be one stray click from moving hundreds of rows they haven't seen a count for.
+**Preview is mandatory, and it shows the actual records.** Run stays disabled until a preview has been taken, and changing any criterion disables it again *and clears the list* — a stale list beside changed criteria is worse than an empty one, because it looks current.
+
+Preview lists every matching claim (ID, site, provider, status, attempts, creation date). **Click any row** and the lower list shows exactly the history rows that would move with it, with a count. So before committing, an admin can see both what goes and what goes with it.
+
+The preview list is capped at 5,000 rows — a UserForm ListBox degrades badly well before Excel's limits. Past the cap the status bar says how many actually matched and notes that **the archive still moves all of them**; the run re-evaluates the criteria against the full list rather than using the displayed slice.
 
 ### Design decisions that protect your data
 

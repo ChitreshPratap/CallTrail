@@ -50,6 +50,8 @@ Private WithEvents cboArchiveAge As MSForms.ComboBox
 Attribute cboArchiveAge.VB_VarHelpID = -1
 Private WithEvents chkArchiveClosedOnly As MSForms.CheckBox
 Attribute chkArchiveClosedOnly.VB_VarHelpID = -1
+Private WithEvents lstArchiveClaims As MSForms.ListBox
+Attribute lstArchiveClaims.VB_VarHelpID = -1
 
 Private txtSiteClaimID As MSForms.TextBox
 Private txtNewSite As MSForms.TextBox
@@ -57,6 +59,17 @@ Private txtReopenClaimID As MSForms.TextBox
 Private txtReopenReason As MSForms.TextBox
 Private lblReopenStatus As MSForms.Label
 Private lblArchivePreview As MSForms.Label
+Private lstArchiveHistory As MSForms.ListBox
+Private lblArchiveHistCount As MSForms.Label
+
+' The claims currently shown in the preview list. Held so a click can
+' map a list row back to a claim without re-running the filter.
+Private m_previewClaims As Collection
+
+' A UserForm ListBox degrades badly long before Excel's row limits, and
+' an archive run can easily match thousands of claims. Past this we show
+' a slice and say so rather than freezing the form.
+Private Const MAX_PREVIEW_ROWS As Long = 5000
 Private lblAdminUser As MSForms.Label
 Private lblBulkInfo As MSForms.Label
 
@@ -89,6 +102,12 @@ Private Sub IPage_InitPage(ctx As clsAppContext, pg As MSForms.Page)
     Set cmdArchivePreview = BindControl(pg, "cmdAdmArchivePreview", IPage_PageTitle)
     Set cmdArchiveRun = BindControl(pg, "cmdAdmArchiveRun", IPage_PageTitle)
     Set lblArchivePreview = BindControl(pg, "lblAdmArchivePreview", IPage_PageTitle)
+    Set lstArchiveClaims = BindControl(pg, "lstAdmArchiveClaims", IPage_PageTitle)
+    Set lstArchiveHistory = BindControl(pg, "lstAdmArchiveHistory", IPage_PageTitle)
+    Set lblArchiveHistCount = BindControl(pg, "lblAdmArchiveHistCount", IPage_PageTitle)
+
+    ConfigureClaimList lstArchiveClaims
+    ConfigureHistoryList lstArchiveHistory
 
     cboArchiveAge.List = Array("Older than 2 months", "Older than 3 months", _
                                 "Older than 4 months", "Older than 5 months", _
@@ -236,6 +255,9 @@ End Sub
 Private Sub InvalidatePreview()
     cmdArchiveRun.Enabled = False
     lblArchivePreview.Caption = "Criteria changed - preview again before archiving."
+    ' Clear the list too: leaving a stale list beside changed criteria is
+    ' worse than showing nothing, because it looks current.
+    ClearPreviewLists
 End Sub
 
 Private Sub cmdArchivePreview_Click()
@@ -248,9 +270,16 @@ Private Sub cmdArchivePreview_Click()
 
     If n = 0 Then
         lblArchivePreview.Caption = "No claims match these criteria - nothing to archive."
+        ClearPreviewLists
         cmdArchiveRun.Enabled = False
         Exit Sub
     End If
+
+    ' Show the claims themselves, not just a number. An admin about to
+    ' move rows out of the working sheets should be able to look at what
+    ' is going, and drill into any one of them.
+    Set m_previewClaims = svc.GetMatching(m_ctx.Claims())
+    PopulatePreviewList
 
     lblArchivePreview.Caption = n & " claim(s) would be archived, with all their call history." & _
         IIf(IsDate(oldest), "  Oldest raised " & Format$(oldest, "dd-mmm-yyyy") & ".", "") & _
@@ -258,8 +287,80 @@ Private Sub cmdArchivePreview_Click()
             "  WARNING: Pending claims are included - callers will lose sight of live work.", "")
 
     cmdArchiveRun.Enabled = True
-    m_ctx.SetStatus "Preview ready - " & n & " claim(s) match."
+    m_ctx.SetStatus "Preview ready - " & n & " claim(s) match. Click any row to see its call history."
 End Sub
+
+' ---------------------------------------------------------------------
+' Preview list handling
+' ---------------------------------------------------------------------
+Private Sub PopulatePreviewList()
+    Dim listData As Variant
+    Dim shown As Collection
+
+    lstArchiveClaims.Clear
+    lstArchiveHistory.Clear
+    lblArchiveHistCount.Caption = ""
+
+    If m_previewClaims Is Nothing Then Exit Sub
+    If m_previewClaims.Count = 0 Then Exit Sub
+
+    If m_previewClaims.Count > MAX_PREVIEW_ROWS Then
+        Set shown = TakeFirst(m_previewClaims, MAX_PREVIEW_ROWS)
+        m_ctx.SetStatus m_previewClaims.Count & " claims match - listing the first " & _
+                        MAX_PREVIEW_ROWS & ". The archive still moves ALL of them."
+        ' The displayed collection is truncated so the click handler can
+        ' index it directly. The archive run does NOT use this collection -
+        ' it re-evaluates the criteria against the full list, so every
+        ' matching claim still moves even though only a slice is listed.
+        Set m_previewClaims = shown
+    End If
+
+    listData = ClaimsToListArray(m_previewClaims)
+    If Not IsEmpty(listData) Then lstArchiveClaims.List = listData
+End Sub
+
+' Clicking a claim shows the exact history rows that would move with it.
+Private Sub lstArchiveClaims_Click()
+    Dim idx As Long
+    Dim c As clsClaim
+    Dim hist As Collection
+    Dim histData As Variant
+
+    lstArchiveHistory.Clear
+    lblArchiveHistCount.Caption = ""
+
+    idx = lstArchiveClaims.ListIndex
+    If idx < 0 Then Exit Sub
+    If m_previewClaims Is Nothing Then Exit Sub
+    If idx + 1 > m_previewClaims.Count Then Exit Sub
+
+    Set c = m_previewClaims(idx + 1)     ' ListIndex 0-based, Collection 1-based
+    Set hist = m_ctx.Repo.GetHistory(c.ClaimID)
+
+    histData = HistoryToListArray(hist)
+    If Not IsEmpty(histData) Then lstArchiveHistory.List = histData
+
+    lblArchiveHistCount.Caption = hist.Count & " history row(s) for " & c.ClaimID & _
+                                   " would move with it"
+End Sub
+
+Private Sub ClearPreviewLists()
+    Set m_previewClaims = Nothing
+    lstArchiveClaims.Clear
+    lstArchiveHistory.Clear
+    lblArchiveHistCount.Caption = ""
+End Sub
+
+Private Function TakeFirst(source As Collection, ByVal n As Long) As Collection
+    Dim result As New Collection
+    Dim i As Long, limit As Long
+    limit = n
+    If source.Count < limit Then limit = source.Count
+    For i = 1 To limit
+        result.Add source(i)
+    Next i
+    Set TakeFirst = result
+End Function
 
 Private Sub cmdArchiveRun_Click()
     Dim svc As clsArchiveService
@@ -295,6 +396,7 @@ Private Sub cmdArchiveRun_Click()
         m_ctx.InvalidateClaims
         lblArchivePreview.Caption = moved & " claim(s) and " & histMoved & _
                                      " history row(s) archived."
+        ClearPreviewLists
         m_ctx.SetStatus "Archive complete."
     Else
         m_ctx.SetStatus "Nothing was archived."
