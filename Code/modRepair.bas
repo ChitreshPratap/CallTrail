@@ -73,7 +73,7 @@ Private Function StripBlanks(ws As Worksheet, ByVal keyHeader As String) As Long
     lastRow = ws.Cells(ws.Rows.Count, keyCol).End(xlUp).Row
     If lastRow < 2 Then Exit Function
 
-    data = ws.Range(ws.Cells(2, 1), ws.Cells(lastRow, lastCol)).Value
+    data = ws.Range(ws.Cells(2, 1), ws.Cells(lastRow, lastCol)).value
     ReDim kept(1 To UBound(data, 1), 1 To lastCol)
 
     For i = 1 To UBound(data, 1)
@@ -91,7 +91,7 @@ Private Function StripBlanks(ws As Worksheet, ByVal keyHeader As String) As Long
 
     ws.Range(ws.Cells(2, 1), ws.Cells(lastRow, lastCol)).ClearContents
     If n > 0 Then
-        ws.Range(ws.Cells(2, 1), ws.Cells(n + 1, lastCol)).Value = kept
+        ws.Range(ws.Cells(2, 1), ws.Cells(n + 1, lastCol)).value = kept
     End If
     If n + 2 <= lastRow Then
         ws.Rows((n + 2) & ":" & lastRow).Delete Shift:=xlUp
