@@ -1,11 +1,6 @@
 Attribute VB_Name = "modUtils"
 Option Explicit
 
-Private savedScreenUpdating As Boolean
-Private savedCalculation As XlCalculation
-Private savedEnableEvents As Boolean
-
-
 ' =====================================================================
 ' modUtils
 ' Generic helpers used across the app. Keep this file free of any
@@ -31,8 +26,8 @@ Public Function GetCurrentUserRole(dbWb As Workbook) As String
     lastRow = ws.Cells(ws.Rows.Count, nameCol).End(xlUp).Row
 
     For i = 2 To lastRow
-        If LCase$(Trim$(ws.Cells(i, nameCol).value)) = LCase$(Trim$(winUser)) Then
-            GetCurrentUserRole = ws.Cells(i, roleCol).value
+        If LCase$(Trim$(ws.Cells(i, nameCol).Value)) = LCase$(Trim$(winUser)) Then
+            GetCurrentUserRole = ws.Cells(i, roleCol).Value
             Exit Function
         End If
     Next i
@@ -54,9 +49,9 @@ End Function
 ' this alone is a real speedup once the DB has any volume of data,
 ' and costs nothing since these are always restored in CloseCentralDB.
 ' ---------------------------------------------------------------------
-'Private savedScreenUpdating As Boolean
-'Private savedCalculation As XlCalculation
-'Private savedEnableEvents As Boolean
+Private savedScreenUpdating As Boolean
+Private savedCalculation As XlCalculation
+Private savedEnableEvents As Boolean
 
 Public Function OpenCentralDB() As Workbook
     Dim attempt As Long
@@ -95,9 +90,9 @@ End Function
 Public Sub CloseCentralDB(wb As Workbook, ByVal saveChanges As Boolean)
     On Error Resume Next
     If saveChanges Then
-        wb.save
+        wb.Save
     End If
-    wb.Close saveChanges:=False ' already saved above; avoids double prompt
+    wb.Close SaveChanges:=False ' already saved above; avoids double prompt
     On Error GoTo 0
     RestoreAppSettings
 End Sub
@@ -107,6 +102,44 @@ Private Sub RestoreAppSettings()
     Application.EnableEvents = savedEnableEvents
     Application.Calculation = savedCalculation
 End Sub
+
+' ---------------------------------------------------------------------
+' Read-only open, for operations that only READ the central DB.
+'
+' Use this instead of OpenCentralDB for exports, reports and downloads.
+' A read/write open takes a lock on the shared file, so anyone else
+' trying to log a call while a large download runs gets blocked or
+' bounced to read-only themselves. A read-only open takes no such lock.
+' ---------------------------------------------------------------------
+Public Function OpenCentralDBReadOnly() As Workbook
+    Dim attempt As Long
+    Dim wb As Workbook
+
+    savedScreenUpdating = Application.ScreenUpdating
+    savedCalculation = Application.Calculation
+    savedEnableEvents = Application.EnableEvents
+    Application.ScreenUpdating = False
+    Application.EnableEvents = False
+    Application.Calculation = xlCalculationManual
+
+    On Error Resume Next
+    Do
+        attempt = attempt + 1
+        Set wb = Nothing
+        Set wb = Workbooks.Open(FileName:=DB_PATH, UpdateLinks:=0, ReadOnly:=True, Notify:=False)
+        If Not wb Is Nothing Then Exit Do
+        If attempt >= LOCK_MAX_RETRIES Then
+            On Error GoTo 0
+            RestoreAppSettings
+            Err.Raise vbObjectError + 4, "OpenCentralDBReadOnly", _
+                "Could not open the shared database after " & LOCK_MAX_RETRIES & " attempts."
+        End If
+        Application.Wait Now + TimeSerial(0, 0, LOCK_RETRY_WAIT_SEC)
+    Loop
+    On Error GoTo 0
+
+    Set OpenCentralDBReadOnly = wb
+End Function
 
 Public Function NextHistoryID(dbWb As Workbook) As Long
     Dim ws As Worksheet, lastRow As Long, idCol As Long
@@ -140,7 +173,7 @@ Public Function FindClaimRow(dbWb As Workbook, ByVal claimID As String) As Long
     End If
 
     target = Trim$(claimID)
-    idArr = ws.Range(ws.Cells(2, idCol), ws.Cells(lastRow, idCol)).value ' single bulk read
+    idArr = ws.Range(ws.Cells(2, idCol), ws.Cells(lastRow, idCol)).Value ' single bulk read
 
     ' A single-row result comes back as a plain value, not an array -
     ' handle that edge case (lastRow = 2) explicitly.
@@ -177,7 +210,7 @@ Public Function GetColIndex(ws As Worksheet, ByVal headerName As String) As Long
     Dim lastCol As Long, i As Long
     lastCol = ws.Cells(1, ws.Columns.Count).End(xlToLeft).Column
     For i = 1 To lastCol
-        If Trim$(LCase$(CStr(ws.Cells(1, i).value))) = Trim$(LCase$(headerName)) Then
+        If Trim$(LCase$(CStr(ws.Cells(1, i).Value))) = Trim$(LCase$(headerName)) Then
             GetColIndex = i
             Exit Function
         End If
@@ -199,7 +232,7 @@ Public Function BuildHeaderMap(ws As Worksheet) As Object
 
     Set map = CreateObject("Scripting.Dictionary")
     lastCol = ws.Cells(1, ws.Columns.Count).End(xlToLeft).Column
-    headerRow = ws.Range(ws.Cells(1, 1), ws.Cells(1, lastCol)).value ' 1 bulk read
+    headerRow = ws.Range(ws.Cells(1, 1), ws.Cells(1, lastCol)).Value ' 1 bulk read
 
     If lastCol = 1 Then
         map(Trim$(LCase$(CStr(headerRow)))) = 1
