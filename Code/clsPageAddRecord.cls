@@ -23,15 +23,16 @@ Private m_ctx As clsAppContext
 Private m_pg As MSForms.Page
 Private m_arranged As Boolean
 
-Private WithEvents cmdSave As MSForms.CommandButton
+Private WithEvents cmdSave As MSForms.Label
 Attribute cmdSave.VB_VarHelpID = -1
 'Attribute cmdSave.VB_VarHelpID = -1
-Private WithEvents cmdClear As MSForms.CommandButton
+Private WithEvents cmdClear As MSForms.Label
 Attribute cmdClear.VB_VarHelpID = -1
 'Attribute cmdClear.VB_VarHelpID = -1
-Private WithEvents cmdCancel As MSForms.CommandButton
+Private WithEvents cmdCancel As MSForms.Label
 Attribute cmdCancel.VB_VarHelpID = -1
- 
+Private WithEvents datePickerCreatedOn As MSForms.Label
+Attribute datePickerCreatedOn.VB_VarHelpID = -1
 
 Private txtClaimID As MSForms.TextBox
 Private txtClaimSite As MSForms.TextBox
@@ -57,6 +58,7 @@ Private Sub IPage_InitPage(ctx As clsAppContext, pg As MSForms.Page)
     Set txtProviderName = BindControl(pg, "txtAddProviderName", IPage_PageTitle)
     Set txtQuery = BindControl(pg, "txtAddClaimQuery", IPage_PageTitle)
     Set txtCreationDate = BindControl(pg, "dtAddCreationDate", IPage_PageTitle)
+    Set datePickerCreatedOn = BindControl(pg, "dtPickerCreatedOn", IPage_PageTitle)
     Set cmdSave = BindControl(pg, "cmdAddSave", IPage_PageTitle)
     Set cmdClear = BindControl(pg, "cmdAddReset", IPage_PageTitle)
     Set cmdCancel = BindControl(pg, "cmdAddCancel", IPage_PageTitle)
@@ -85,6 +87,17 @@ Private Sub IPage_OnActivate()
     
 End Sub
 
+Private Sub datePickerCreatedOn_click()
+    
+    Dim dtPick As Date
+    Dim dtPickStr As String
+    
+    dtPick = CalendarForm.GetDate()
+    dtPickStr = Format(dtPick, "MMM-dd-yyyy")
+    txtCreationDate.value = dtPickStr
+    
+End Sub
+
  
 Private Sub cmdSave_Click()
         
@@ -96,11 +109,11 @@ Private Sub cmdSave_Click()
     
     Dim txtStatus As String
     
-    tClaimId = Trim(txtClaimID.Value)
-    tClaimSite = Trim(txtClaimSite.Value)
-    tProviderName = Trim(txtProviderName.Value)
-    tClaimQuery = Trim(txtQuery.Value)
-    tDtCreationDate = Trim(txtCreationDate.Value)
+    tClaimId = Trim(txtClaimID.value)
+    tClaimSite = Trim(txtClaimSite.value)
+    tProviderName = Trim(txtProviderName.value)
+    tClaimQuery = Trim(txtQuery.value)
+    tDtCreationDate = Trim(txtCreationDate.value)
 
     
     Dim creationDate As Date
@@ -127,7 +140,7 @@ Private Sub cmdSave_Click()
         Exit Sub
     End If
  
-    creationDate = CDate(txtCreationDate.Value)
+    creationDate = CDate(txtCreationDate.value)
     
 '    If creationDate > Date Then
 '        Fail "Creation Date cannot be in the future.", txtCreationDate
@@ -155,18 +168,18 @@ Private Sub cmdClear_Click()
 
     ClearFields
     m_ctx.SetStatus "Cleared."
-    MsgBox "Form is cleared", vbOKOnly + vbInformation, "Clear Status"
+    'MsgBox "Form is cleared", vbOKOnly + vbInformation, "Clear Status"
     
 End Sub
  
 Private Sub ClearFields()
     
-    txtClaimID.Value = ""
-    txtClaimSite.Value = ""
-    txtProviderName.Value = ""
-    txtQuery.Value = ""
+    txtClaimID.value = ""
+    txtClaimSite.value = ""
+    txtProviderName.value = ""
+    txtQuery.value = ""
     'txtCreationDate.Value = Format$(Date, "dd-mmm-yyyy")
-    txtCreationDate.Value = ""
+    txtCreationDate.value = ""
 
 End Sub
  
@@ -179,17 +192,25 @@ End Sub
  
 Private Sub arrangeUI()
  
-        
+            
+    'Dim m_pg As UserFormMain
+            
     With m_pg.framePageAddRecord
         
         .width = m_pg.Parent.width + 1
         .height = m_pg.Parent.height + 1
-'        .BackColor = VarnahUtil.getFadeColor(AppUtil.getThemeColor(), 0.9)
-        .BackColor = vbYellow
+        .BackColor = VarnahUtil.getFadeColor(AppUtil.getThemeColor(), 0.9)
+'        .BackColor = vbYellow
         .Left = -1
         .Top = -1
         '.height = mainWindowHeight - lblCloseDashboard.height - lblCloseDashboard.Top
         
+        .lblHeadingAddClaim.Top = 4.5
+        .lblHeadingAddClaim.Left = 9
+        .lblHeadingULineAddClaim.Top = .lblHeadingAddClaim.Top + .lblHeadingAddClaim.height + 2
+        .lblHeadingULineAddClaim.Left = 9
+        .lblHeadingULineAddClaim.width = .width - 2 * .lblHeadingAddClaim.Left
+        .lblHeadingULineAddClaim.height = 2
         
 '        Me.frameFilterViewClaims.Left = .width - Me.frameFilterViewClaims.width
 '        Me.frameFilterViewClaims.height = .height
@@ -198,14 +219,16 @@ Private Sub arrangeUI()
         
     End With
  
-     'Style Page Add Claim
-     
-     
+    'Style Page Add Claim
     collectionStyledControls.Add Styler.getStyledBoxULine(txtClaimID, "Claim Id*")
     collectionStyledControls.Add Styler.getStyledBoxULine(txtClaimSite, "Claim Site*")
     collectionStyledControls.Add Styler.getStyledBoxULine(txtProviderName, "Provider Name*")
     collectionStyledControls.Add Styler.getStyledBoxULine(txtCreationDate, "Creation Date*")
     collectionStyledControls.Add Styler.getStyledBoxULine(txtQuery, "ClaimQuery*")
+    collectionStyledControls.Add Styler.getStyleButton(cmdSave)
+    collectionStyledControls.Add Styler.getStyleButton(cmdCancel)
+    collectionStyledControls.Add Styler.getStyleButton(cmdClear)
+    collectionStyledControls.Add Styler.getStyleButton(datePickerCreatedOn)
     
 
  End Sub

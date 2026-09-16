@@ -51,6 +51,29 @@ Public NoteColor As Long
 Public EditableBackColor As Long
 Public ReadOnlyBackColor As Long
 
+
+Private m_scale As Single
+
+' Width in points of REF_TEXT in Segoe UI 9pt, measured on a standard
+' 96 DPI Windows machine with the font installed. Calibrate compares the
+' local measurement against this.
+'
+' To re-baseline on your own machine: run Calibrate, then read
+' MeasuredReferenceWidth and put that number here.
+
+Private Const REF_TEXT As String = "Provider Name: ABCDEFGHIJ 0123456789"
+Private Const REF_WIDTH As Single = 171
+
+Private m_measuredRef As Single
+
+
+' Tunables are scaled once, here. Explicit width/height arguments passed
+' to individual methods are scaled at the point of use via S().
+' Scales the tunables AND the starting cursor, which Init set before the
+' scale was known. Guarded so a second call can't compound the scaling.
+Private m_scaleApplied As Boolean
+
+
 Private Sub Class_Initialize()
     LabelWidth = 105
     fieldWidth = 230
@@ -87,18 +110,6 @@ End Sub
 '     1366x768, no scaling helps - design for the smallest screen.
 ' =====================================================================
 
-Private m_scale As Single
-
-' Width in points of REF_TEXT in Segoe UI 9pt, measured on a standard
-' 96 DPI Windows machine with the font installed. Calibrate compares the
-' local measurement against this.
-'
-' To re-baseline on your own machine: run Calibrate, then read
-' MeasuredReferenceWidth and put that number here.
-Private Const REF_TEXT As String = "Provider Name: ABCDEFGHIJ 0123456789"
-Private Const REF_WIDTH As Single = 171
-
-Private m_measuredRef As Single
 
 Public Property Get ScaleFactor() As Single
     ScaleFactor = m_scale
@@ -174,11 +185,6 @@ GiveUp:
     m_scale = 1
 End Sub
 
-' Tunables are scaled once, here. Explicit width/height arguments passed
-' to individual methods are scaled at the point of use via S().
-' Scales the tunables AND the starting cursor, which Init set before the
-' scale was known. Guarded so a second call can't compound the scaling.
-Private m_scaleApplied As Boolean
 
 Private Sub ApplyScaleToTunables()
     If m_scaleApplied Then Exit Sub
@@ -220,8 +226,8 @@ Public Property Let CurrentTop(ByVal v As Single)
     m_top = v
 End Property
 
-Public Property Get CurrentLeft() As Single
-    CurrentLeft = m_left
+Public Property Get currentLeft() As Single
+    currentLeft = m_left
 End Property
 
 ' Start a second column - e.g. a detail panel to the right of a list
@@ -255,7 +261,7 @@ Public Sub Header(ByVal labelName As String, Optional ByVal caption As String = 
         .Font.Name = FontName
         .Font.Size = FontSize + 1
         .Font.Bold = True
-        .ForeColor = HeaderColor
+        .foreColor = HeaderColor
     End With
 
     m_top = m_top + RowHeight + RowGap
@@ -368,7 +374,7 @@ Public Sub Note(ByVal labelName As String, Optional ByVal caption As String = ""
         If caption <> "" Then .caption = caption
         .Font.Name = FontName
         .Font.Size = FontSize
-        .ForeColor = NoteColor
+        .foreColor = NoteColor
         .WordWrap = (h > RowHeight)
     End With
 
@@ -529,7 +535,7 @@ Public Sub StyleStatusBar(ByVal ctrlName As String)
     With lbl
         .Font.Name = FontName
         .Font.Size = FontSize
-        .ForeColor = NoteColor
+        .foreColor = NoteColor
         .TextAlign = fmTextAlignLeft
         .caption = ""
     End With
@@ -578,7 +584,7 @@ Public Sub TitleBar(ByVal ctrlName As String, ByVal caption As String, _
         .Font.Name = FontName
         .Font.Size = FontSize + 3
         .Font.Bold = True
-        .ForeColor = HeaderColor
+        .foreColor = HeaderColor
         .TextAlign = fmTextAlignLeft
     End With
 End Sub
@@ -683,7 +689,7 @@ Private Sub StyleField(ctl As MSForms.control, ByVal isMultiline As Boolean, _
         ctl.BorderStyle = fmBorderStyleSingle
 
     ElseIf TypeOf ctl Is MSForms.Label Then
-        ctl.ForeColor = &H80000012          ' window text
+        ctl.foreColor = &H80000012          ' window text
     End If
 
     On Error GoTo 0

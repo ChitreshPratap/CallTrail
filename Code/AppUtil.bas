@@ -11,6 +11,7 @@ Function getThemeColor() As Long
     'baseColor = RGB(97, 68, 229)
     baseColor = RGB(68, 188, 229)
     'baseColor = RGB(168, 229, 68)
+    baseColor = RGB(0, 44, 58)
     getThemeColor = baseColor
 End Function
 

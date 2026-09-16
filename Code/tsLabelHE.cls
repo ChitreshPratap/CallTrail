@@ -49,7 +49,7 @@ Sub setMukhLabel(mukhLabel As MSForms.Label)
     Set dynaLabelParent = var_mukhLabel.Parent
     var_originalFont = mukhLabel.Font.Size
     var_originalBackColor = var_mukhLabel.BackColor
-    var_originalForeColor = var_mukhLabel.ForeColor
+    var_originalForeColor = var_mukhLabel.foreColor
     
 End Sub
 
@@ -127,7 +127,7 @@ Private Sub styleHoverOn()
     onHoverForeColor = Me.getOnHoverForeColor()
     If onHoverForeColor <> 0 Then
         With tMukhLabel
-            .ForeColor = onHoverForeColor
+            .foreColor = onHoverForeColor
         End With
     End If
     
@@ -140,17 +140,17 @@ Private Sub styleHoverOff()
     With tMukhLabel
         .Font.Size = var_originalFont
         .BackColor = var_originalBackColor
-        .ForeColor = var_originalForeColor
+        .foreColor = var_originalForeColor
     End With
 End Sub
 
-Private Sub dynaLabel_MouseMove(ByVal Button As Integer, ByVal Shift As Integer, ByVal x As Single, ByVal y As Single)
+Private Sub dynaLabel_MouseMove(ByVal Button As Integer, ByVal Shift As Integer, ByVal X As Single, ByVal Y As Single)
     
     styleHoverOn
 
 End Sub
 
-Private Sub dynaLabelParent_MouseMove(ByVal Button As Integer, ByVal Shift As Integer, ByVal x As Single, ByVal y As Single)
+Private Sub dynaLabelParent_MouseMove(ByVal Button As Integer, ByVal Shift As Integer, ByVal X As Single, ByVal Y As Single)
     
     styleHoverOff
 

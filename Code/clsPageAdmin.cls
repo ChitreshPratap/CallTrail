@@ -27,31 +27,48 @@ Implements IPage
 
 Private m_ctx As clsAppContext
 Private m_pg As MSForms.Page
+Private m_arranged As Boolean
 
 Private WithEvents cmdChangeSite As MSForms.CommandButton
 Attribute cmdChangeSite.VB_VarHelpID = -1
+'Attribute cmdChangeSite.VB_VarHelpID = -1
 Private WithEvents cmdBulkSetup As MSForms.CommandButton
 Attribute cmdBulkSetup.VB_VarHelpID = -1
+'Attribute cmdBulkSetup.VB_VarHelpID = -1
 Private WithEvents cmdBulkLoadFile As MSForms.CommandButton
 Attribute cmdBulkLoadFile.VB_VarHelpID = -1
+'Attribute cmdBulkLoadFile.VB_VarHelpID = -1
 Private WithEvents cmdBulkCheck As MSForms.CommandButton
 Attribute cmdBulkCheck.VB_VarHelpID = -1
+'Attribute cmdBulkCheck.VB_VarHelpID = -1
 Private WithEvents cmdBulkProcess As MSForms.CommandButton
 Attribute cmdBulkProcess.VB_VarHelpID = -1
+'Attribute cmdBulkProcess.VB_VarHelpID = -1
 Private WithEvents cmdReopen As MSForms.CommandButton
 Attribute cmdReopen.VB_VarHelpID = -1
+'Attribute cmdReopen.VB_VarHelpID = -1
 Private WithEvents cmdCheckStatus As MSForms.CommandButton
 Attribute cmdCheckStatus.VB_VarHelpID = -1
+'Attribute cmdCheckStatus.VB_VarHelpID = -1
+
+
 Private WithEvents cmdArchivePreview As MSForms.CommandButton
 Attribute cmdArchivePreview.VB_VarHelpID = -1
+'Attribute cmdArchivePreview.VB_VarHelpID = -1
 Private WithEvents cmdArchiveRun As MSForms.CommandButton
 Attribute cmdArchiveRun.VB_VarHelpID = -1
+'Attribute cmdArchiveRun.VB_VarHelpID = -1
 Private WithEvents cboArchiveAge As MSForms.ComboBox
 Attribute cboArchiveAge.VB_VarHelpID = -1
+'Attribute cboArchiveAge.VB_VarHelpID = -1
 Private WithEvents chkArchiveClosedOnly As MSForms.CheckBox
 Attribute chkArchiveClosedOnly.VB_VarHelpID = -1
+'Attribute chkArchiveClosedOnly.VB_VarHelpID = -1
+
 Private WithEvents lstArchiveClaims As MSForms.ListBox
 Attribute lstArchiveClaims.VB_VarHelpID = -1
+'Attribute lstArchiveClaims.VB_VarHelpID = -1
+ 
 
 Private txtSiteClaimID As MSForms.TextBox
 Private txtNewSite As MSForms.TextBox
@@ -59,6 +76,9 @@ Private txtReopenClaimID As MSForms.TextBox
 Private txtReopenReason As MSForms.TextBox
 Private lblReopenStatus As MSForms.Label
 Private lblArchivePreview As MSForms.Label
+Private lblAdminUser As MSForms.Label
+
+Private Const MAX_PREVIEW_ROWS As Long = 5000
 Private lstArchiveHistory As MSForms.ListBox
 Private lblArchiveHistCount As MSForms.Label
 
@@ -66,11 +86,7 @@ Private lblArchiveHistCount As MSForms.Label
 ' map a list row back to a claim without re-running the filter.
 Private m_previewClaims As Collection
 
-' A UserForm ListBox degrades badly long before Excel's row limits, and
-' an archive run can easily match thousands of claims. Past this we show
-' a slice and say so rather than freezing the form.
-Private Const MAX_PREVIEW_ROWS As Long = 5000
-Private lblAdminUser As MSForms.Label
+
 Private lblBulkInfo As MSForms.Label
 
 Private Property Get IPage_PageTitle() As String
@@ -80,7 +96,7 @@ End Property
 Private Sub IPage_InitPage(ctx As clsAppContext, pg As MSForms.Page)
     Set m_ctx = ctx
     Set m_pg = pg
-
+                                            
     Set txtSiteClaimID = BindControl(pg, "txtAdmClaimID", IPage_PageTitle)
     Set txtNewSite = BindControl(pg, "txtAdmNewSite", IPage_PageTitle)
     Set cmdChangeSite = BindControl(pg, "cmdAdmChangeSite", IPage_PageTitle)
@@ -94,62 +110,76 @@ Private Sub IPage_InitPage(ctx As clsAppContext, pg As MSForms.Page)
     Set cmdReopen = BindControl(pg, "cmdAdmReopen", IPage_PageTitle)
     Set lblReopenStatus = BindControl(pg, "lblAdmReopenStatus", IPage_PageTitle)
 
-    txtReopenReason.MultiLine = True
-    cmdReopen.Enabled = False        ' until a Closed claim is confirmed
+    txtReopenReason.Multiline = True
+    cmdReopen.enabled = False        ' until a Closed claim is confirmed
+
 
     Set cboArchiveAge = BindControl(pg, "cboAdmArchiveAge", IPage_PageTitle)
     Set chkArchiveClosedOnly = BindControl(pg, "chkAdmArchiveClosedOnly", IPage_PageTitle)
     Set cmdArchivePreview = BindControl(pg, "cmdAdmArchivePreview", IPage_PageTitle)
     Set cmdArchiveRun = BindControl(pg, "cmdAdmArchiveRun", IPage_PageTitle)
     Set lblArchivePreview = BindControl(pg, "lblAdmArchivePreview", IPage_PageTitle)
+
     Set lstArchiveClaims = BindControl(pg, "lstAdmArchiveClaims", IPage_PageTitle)
     Set lstArchiveHistory = BindControl(pg, "lstAdmArchiveHistory", IPage_PageTitle)
     Set lblArchiveHistCount = BindControl(pg, "lblAdmArchiveHistCount", IPage_PageTitle)
-
     ConfigureClaimList lstArchiveClaims
     ConfigureHistoryList lstArchiveHistory
-
+    
     cboArchiveAge.List = Array("Older than 2 months", "Older than 3 months", _
                                 "Older than 4 months", "Older than 5 months", _
                                 "Older than 6 months", "Any age")
-    cboArchiveAge.Value = "Older than 6 months"
-    chkArchiveClosedOnly.Value = True       ' the safe default
-    cmdArchiveRun.Enabled = False            ' until a preview has been run
+                                
+                                
+    cboArchiveAge.value = "Older than 6 months"
+    chkArchiveClosedOnly.value = True       ' the safe default
+    cmdArchiveRun.enabled = False            ' until a preview has been run
 
     Set lblAdminUser = BindOptional(pg, "lblAdmUser")
     Set lblBulkInfo = BindOptional(pg, "lblAdmBulkInfo")
+    
 End Sub
 
 Private Sub IPage_OnActivate()
+
+    m_ctx.SetStatus "Admin tools."
+    If Not m_arranged Then
+         arrangeUI
+         m_arranged = True
+     End If
+
+
     If Not lblAdminUser Is Nothing Then
-        lblAdminUser.Caption = "Signed in as: " & m_ctx.UserName & _
-                               IIf(m_ctx.IsAdmin, " (Admin)", " (User)")
+        lblAdminUser.caption = "Signed in as: " & m_ctx.userName & _
+                               IIf(m_ctx.isAdmin, " (Admin)", " (User)")
     End If
+    
     If Not lblBulkInfo Is Nothing Then
-        lblBulkInfo.Caption = "Bulk entry uses the '" & BULK_SHEET & "' sheet. " & _
+        lblBulkInfo.caption = "Bulk entry uses the '" & BULK_SHEET & "' sheet. " & _
                               "Valid rows are imported and removed; rows with problems stay " & _
                               "with the reason in the ValidationError column."
     End If
-    m_ctx.SetStatus "Admin tools."
+        
 End Sub
 
 Private Sub cmdChangeSite_Click()
-    If Trim$(txtSiteClaimID.Value) = "" Or Trim$(txtNewSite.Value) = "" Then
+    If Trim$(txtSiteClaimID.value) = "" Or Trim$(txtNewSite.value) = "" Then
         MsgBox "Enter both a Claim ID and the new site.", vbExclamation, "Missing Details"
         Exit Sub
     End If
 
     ' ChangeUpdatedSite re-checks admin rights itself - this tab being
     ' visible is not what authorises the change.
-    If m_ctx.Repo.ChangeUpdatedSite(Trim$(txtSiteClaimID.Value), Trim$(txtNewSite.Value)) Then
+    If m_ctx.repo.ChangeUpdatedSite(Trim$(txtSiteClaimID.value), Trim$(txtNewSite.value)) Then
         m_ctx.InvalidateClaims
-        m_ctx.SetStatus "Site updated for " & Trim$(txtSiteClaimID.Value) & "."
-        txtSiteClaimID.Value = ""
-        txtNewSite.Value = ""
+        m_ctx.SetStatus "Site updated for " & Trim$(txtSiteClaimID.value) & "."
+        txtSiteClaimID.value = ""
+        txtNewSite.value = ""
     End If
 End Sub
 
-' ---------------------------------------------------------------------
+
+ '---------------------------------------------------------------------
 ' Reopen a closed claim.
 '
 ' Two steps on purpose: check first, then reopen. The Reopen button
@@ -160,28 +190,28 @@ End Sub
 Private Sub cmdCheckStatus_Click()
     Dim c As clsClaim
 
-    cmdReopen.Enabled = False
-    lblReopenStatus.Caption = ""
+    cmdReopen.enabled = False
+    lblReopenStatus.caption = ""
 
-    If Trim$(txtReopenClaimID.Value) = "" Then
+    If Trim$(txtReopenClaimID.value) = "" Then
         MsgBox "Enter a Claim ID to check.", vbExclamation, "Nothing to Check"
         Exit Sub
     End If
 
-    Set c = m_ctx.Repo.FindClaim(Trim$(txtReopenClaimID.Value))
+    Set c = m_ctx.repo.FindClaim(Trim$(txtReopenClaimID.value))
 
     If c Is Nothing Then
-        lblReopenStatus.Caption = "No claim found with that ID."
+        lblReopenStatus.caption = "No claim found with that ID."
         Exit Sub
     End If
 
-    lblReopenStatus.Caption = c.ClaimProviderName & " | " & c.ClaimSite & _
+    lblReopenStatus.caption = c.ClaimProviderName & " | " & c.claimSite & _
                               " | Status: " & c.ClaimStatus & _
-                              " | Calls: " & c.Attempt & _
+                              " | Calls: " & c.attempt & _
                               IIf(c.IsClosed, " | Closed " & FormatDateOrBlank(c.ClaimClosedDate), "")
 
     If c.IsClosed Then
-        cmdReopen.Enabled = True
+        cmdReopen.enabled = True
         m_ctx.SetStatus "Claim is Closed - enter a reason and reopen."
         txtReopenReason.SetFocus
     Else
@@ -192,10 +222,10 @@ End Sub
 Private Sub cmdReopen_Click()
     Dim claimID As String
 
-    claimID = Trim$(txtReopenClaimID.Value)
+    claimID = Trim$(txtReopenClaimID.value)
     If claimID = "" Then Exit Sub
 
-    If Trim$(txtReopenReason.Value) = "" Then
+    If Trim$(txtReopenReason.value) = "" Then
         MsgBox "A reason is required. It is written to the claim history as a " & _
                "permanent record of why this claim was reopened.", _
                vbExclamation, "Reason Needed"
@@ -208,15 +238,20 @@ Private Sub cmdReopen_Click()
               "The reason is recorded in the claim history against your name.", _
               vbYesNo + vbQuestion, "Confirm Reopen") = vbNo Then Exit Sub
 
-    If m_ctx.Repo.ReopenClaim(claimID, Trim$(txtReopenReason.Value)) Then
+    If m_ctx.repo.ReopenClaim(claimID, Trim$(txtReopenReason.value)) Then
         m_ctx.InvalidateClaims
         m_ctx.SetStatus "Claim " & claimID & " reopened and set back to Pending."
-        txtReopenClaimID.Value = ""
-        txtReopenReason.Value = ""
-        lblReopenStatus.Caption = ""
-        cmdReopen.Enabled = False
+        txtReopenClaimID.value = ""
+        txtReopenReason.value = ""
+        lblReopenStatus.caption = ""
+        cmdReopen.enabled = False
     End If
 End Sub
+
+
+
+
+
 
 ' ---------------------------------------------------------------------
 ' Archiving.
@@ -227,14 +262,17 @@ End Sub
 ' rows they haven't seen a count for.
 ' ---------------------------------------------------------------------
 Private Function BuildArchiveService() As clsArchiveService
+
     Dim svc As New clsArchiveService
     svc.OlderThanMonths = MonthsFromCombo()
-    svc.ClosedOnly = CBool(chkArchiveClosedOnly.Value)
+    svc.ClosedOnly = CBool(chkArchiveClosedOnly.value)
     Set BuildArchiveService = svc
+    
 End Function
 
 Private Function MonthsFromCombo() As Long
-    Select Case CStr(cboArchiveAge.Value)
+
+    Select Case CStr(cboArchiveAge.value)
         Case "Older than 2 months": MonthsFromCombo = 2
         Case "Older than 3 months": MonthsFromCombo = 3
         Case "Older than 4 months": MonthsFromCombo = 4
@@ -242,22 +280,28 @@ Private Function MonthsFromCombo() As Long
         Case "Older than 6 months": MonthsFromCombo = 6
         Case Else: MonthsFromCombo = 0      ' "Any age" - no date filter
     End Select
+    
 End Function
 
 Private Sub cboArchiveAge_Change()
+
     InvalidatePreview
+    
 End Sub
 
 Private Sub chkArchiveClosedOnly_Click()
+
     InvalidatePreview
+    
 End Sub
 
 Private Sub InvalidatePreview()
-    cmdArchiveRun.Enabled = False
-    lblArchivePreview.Caption = "Criteria changed - preview again before archiving."
-    ' Clear the list too: leaving a stale list beside changed criteria is
+
+    cmdArchiveRun.enabled = False
+    lblArchivePreview.caption = "Criteria changed - preview again before archiving."
     ' worse than showing nothing, because it looks current.
     ClearPreviewLists
+
 End Sub
 
 Private Sub cmdArchivePreview_Click()
@@ -266,29 +310,31 @@ Private Sub cmdArchivePreview_Click()
     Dim oldest As Variant
 
     Set svc = BuildArchiveService()
-    n = svc.CountMatching(m_ctx.Claims(), oldest)
+    n = svc.CountMatching(m_ctx.claims(), oldest)
 
     If n = 0 Then
-        lblArchivePreview.Caption = "No claims match these criteria - nothing to archive."
+        
+        lblArchivePreview.caption = "No claims match these criteria - nothing to archive."
         ClearPreviewLists
-        cmdArchiveRun.Enabled = False
+        cmdArchiveRun.enabled = False
         Exit Sub
     End If
-
     ' Show the claims themselves, not just a number. An admin about to
     ' move rows out of the working sheets should be able to look at what
     ' is going, and drill into any one of them.
-    Set m_previewClaims = svc.GetMatching(m_ctx.Claims())
+    Set m_previewClaims = svc.GetMatching(m_ctx.claims())
     PopulatePreviewList
-
-    lblArchivePreview.Caption = n & " claim(s) would be archived, with all their call history." & _
+    
+    lblArchivePreview.caption = n & " claim(s) would be archived, with all their call history." & _
         IIf(IsDate(oldest), "  Oldest raised " & Format$(oldest, "dd-mmm-yyyy") & ".", "") & _
-        IIf(Not CBool(chkArchiveClosedOnly.Value), _
+        IIf(Not CBool(chkArchiveClosedOnly.value), _
             "  WARNING: Pending claims are included - callers will lose sight of live work.", "")
 
-    cmdArchiveRun.Enabled = True
+    cmdArchiveRun.enabled = True
     m_ctx.SetStatus "Preview ready - " & n & " claim(s) match. Click any row to see its call history."
+    
 End Sub
+
 
 ' ---------------------------------------------------------------------
 ' Preview list handling
@@ -299,7 +345,7 @@ Private Sub PopulatePreviewList()
 
     lstArchiveClaims.Clear
     lstArchiveHistory.Clear
-    lblArchiveHistCount.Caption = ""
+    lblArchiveHistCount.caption = ""
 
     If m_previewClaims Is Nothing Then Exit Sub
     If m_previewClaims.Count = 0 Then Exit Sub
@@ -327,7 +373,7 @@ Private Sub lstArchiveClaims_Click()
     Dim histData As Variant
 
     lstArchiveHistory.Clear
-    lblArchiveHistCount.Caption = ""
+    lblArchiveHistCount.caption = ""
 
     idx = lstArchiveClaims.ListIndex
     If idx < 0 Then Exit Sub
@@ -335,12 +381,12 @@ Private Sub lstArchiveClaims_Click()
     If idx + 1 > m_previewClaims.Count Then Exit Sub
 
     Set c = m_previewClaims(idx + 1)     ' ListIndex 0-based, Collection 1-based
-    Set hist = m_ctx.Repo.GetHistory(c.ClaimID)
+    Set hist = m_ctx.repo.GetHistory(c.claimID)
 
     histData = HistoryToListArray(hist)
     If Not IsEmpty(histData) Then lstArchiveHistory.List = histData
 
-    lblArchiveHistCount.Caption = hist.Count & " history row(s) for " & c.ClaimID & _
+    lblArchiveHistCount.caption = hist.Count & " history row(s) for " & c.claimID & _
                                    " would move with it"
 End Sub
 
@@ -348,7 +394,7 @@ Private Sub ClearPreviewLists()
     Set m_previewClaims = Nothing
     lstArchiveClaims.Clear
     lstArchiveHistory.Clear
-    lblArchiveHistCount.Caption = ""
+    lblArchiveHistCount.caption = ""
 End Sub
 
 Private Function TakeFirst(source As Collection, ByVal n As Long) As Collection
@@ -362,6 +408,8 @@ Private Function TakeFirst(source As Collection, ByVal n As Long) As Collection
     Set TakeFirst = result
 End Function
 
+
+
 Private Sub cmdArchiveRun_Click()
     Dim svc As clsArchiveService
     Dim n As Long, moved As Long, histMoved As Long
@@ -369,15 +417,15 @@ Private Sub cmdArchiveRun_Click()
     Dim warn As String
 
     Set svc = BuildArchiveService()
-    n = svc.CountMatching(m_ctx.Claims(), oldest)
+    n = svc.CountMatching(m_ctx.claims(), oldest)
 
     If n = 0 Then
-        lblArchivePreview.Caption = "Nothing matches any more - re-run the preview."
-        cmdArchiveRun.Enabled = False
+        lblArchivePreview.caption = "Nothing matches any more - re-run the preview."
+        cmdArchiveRun.enabled = False
         Exit Sub
     End If
 
-    If Not CBool(chkArchiveClosedOnly.Value) Then
+    If Not CBool(chkArchiveClosedOnly.value) Then
         warn = vbCrLf & vbCrLf & "This includes PENDING claims. Callers will no longer see them " & _
                "in the working sheets."
     End If
@@ -394,7 +442,7 @@ Private Sub cmdArchiveRun_Click()
 
     If moved > 0 Then
         m_ctx.InvalidateClaims
-        lblArchivePreview.Caption = moved & " claim(s) and " & histMoved & _
+        lblArchivePreview.caption = moved & " claim(s) and " & histMoved & _
                                      " history row(s) archived."
         ClearPreviewLists
         m_ctx.SetStatus "Archive complete."
@@ -402,8 +450,9 @@ Private Sub cmdArchiveRun_Click()
         m_ctx.SetStatus "Nothing was archived."
     End If
 
-    cmdArchiveRun.Enabled = False
+    cmdArchiveRun.enabled = False
 End Sub
+
 
 ' --- Bulk entry: these run against the bulkClaimAdd worksheet ---
 
@@ -426,3 +475,107 @@ Private Sub cmdBulkProcess_Click()
     m_ctx.InvalidateClaims
     m_ctx.SetStatus "Bulk processing finished - see the " & BULK_SHEET & " sheet."
 End Sub
+
+
+Private Sub arrangeUI()
+    
+  'Dim m_pg As UserFormMain
+            
+        
+    With m_pg.framePageAdmin
+        
+        .width = m_pg.Parent.width + 1
+        .height = m_pg.Parent.height + 1
+        .Left = -1
+        .Top = -1
+
+        .BackColor = VarnahUtil.getFadeColor(AppUtil.getThemeColor(), 0.9)
+        
+'        .MultiPageDetails.Left = .width - .MultiPageDetails.width
+'        .MultiPageDetails.height = .height
+'        .MultiPageDetails.Top = -2
+'
+'        .frameFilterViewClaims.Left = 0
+'        .frameFilterViewClaims.height = .MultiPageDetails.height
+'        .frameFilterViewClaims.Top = -2
+'        .frameFilterViewClaims.BorderStyle = fmBorderStyleNone
+'        .frameFilterViewClaims.ZOrder 0
+'
+'        .frameViewRecordDetails.width = .MultiPageDetails.width
+'        .frameViewRecordDetails.Left = 0
+'        .frameViewRecordDetails.height = .MultiPageDetails.height
+'        .frameViewRecordDetails.Top = -2
+'        .frameViewRecordDetails.BorderStyle = fmBorderStyleNone
+'        .frameViewRecordDetails.ZOrder 1
+'
+'        .frameViewHistoryDetail.width = .MultiPageDetails.width
+'        .frameViewHistoryDetail.Left = 0
+'        .frameViewHistoryDetail.height = .MultiPageDetails.height
+'        .frameViewHistoryDetail.Top = -2
+'        .frameViewHistoryDetail.BorderStyle = fmBorderStyleNone
+'        .frameViewHistoryDetail.ZOrder 1
+'
+'        .frameViewRecords.Left = 10
+'        .frameViewRecords.width = .width - .MultiPageDetails.width - 2 * .frameViewRecords.Left
+'        .frameViewRecords.Top = 50
+'        .frameViewRecords.height = .height / 2
+'        .frameViewRecords.ZOrder 1
+'
+'
+'        .lstViewClaims.Left = 5
+'        .lstViewClaims.Top = 30
+'        .lstViewClaims.height = .frameViewRecords.height - .lstViewClaims.Top - 10
+'        .lstViewClaims.width = .frameViewRecords.width - 2 * .lstViewClaims.Left
+'        .lstViewClaims.BorderStyle = fmBorderStyleSingle
+'        .lstViewClaims.Font.Name = "Segoe UI"
+'        .lstViewClaims.Font.Size = 10
+'
+'
+'        .frameViewHistory.Left = 10
+'        .frameViewHistory.width = .width - .frameFilterViewClaims.width - 2 * .frameViewHistory.Left
+'        .frameViewHistory.Top = .frameViewRecords.height + .frameViewRecords.Top + 10
+'        .frameViewHistory.height = .height / 3
+'        .frameViewHistory.ZOrder 1
+'
+'        .lstViewHistory.Left = 5
+'        .lstViewHistory.Top = 30
+'        .lstViewHistory.height = .frameViewHistory.height - .lstViewHistory.Top - 10
+'        .lstViewHistory.width = .frameViewHistory.width - 2 * .lstViewHistory.Left
+'        .lstViewHistory.BorderStyle = fmBorderStyleSingle
+'        .lstViewHistory.Font.Name = "Segoe UI"
+'        .lstViewHistory.Font.Size = 10
+        
+        
+        
+'        .lstViewClaims.Left = 10
+'        .lstViewClaims.width = .width - 2 * m_pg.lstViewClaims.Left
+'        '.lstViewClaims.ZOrder = 1
+'
+'        .lstViewHistory.Left = 10
+'        .lstViewHistory.width = .width - 2 * .lstViewHistory.Left
+'        '.ZOrder = 1
+'
+        
+    End With
+ 
+     'Style Page Add Claim
+     
+'
+'    collectionStyledControls.Add Styler.getStyledBoxULine(txtSearch, "Claim Id*")
+'    collectionStyledControls.Add Styler.getStyledBoxULine(txtDateFrom, "Date From")
+'    collectionStyledControls.Add Styler.getStyledBoxULine(txtDateTo, "Date To")
+'    'collectionStyledControls.Add Styler.getStyledBoxULine(cboDateField, "Creation Date*")
+'
+'    'Adding headers to listboxClaims
+'    Dim headersClaimList As Variant
+'    Dim headersHistoryList As Variant
+'    headersClaimList = Array("Claim ID", "Claim Site", "Provider Name", "Claim Status", "Attempt", "Creation Date")
+'    headersHistoryList = Array("Caller Name", "Call Date", "Status", "Comment", "Attempt")
+'
+'    ' 4. Call the helper function
+'    ListBoxUtil.CreateListBoxHeaders m_pg.framePageViewRecords.lstViewClaims, headersClaimList
+'    ListBoxUtil.CreateListBoxHeaders m_pg.framePageViewRecords.lstViewHistory, headersHistoryList
+    
+
+ End Sub
+

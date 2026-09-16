@@ -79,7 +79,7 @@ Private Sub DoSearch()
     Dim repo As New ClsClaimRepository
     Dim idToFind As String
 
-    idToFind = Trim$(txtSearchID.Value)
+    idToFind = Trim$(txtSearchID.value)
     If idToFind = "" Then
         MsgBox "Enter a Claim ID to search for.", vbExclamation, "Nothing to Search"
         Exit Sub
@@ -132,11 +132,11 @@ Private Sub PopulateForm(c As clsClaim)
     lblDaysOpen.caption = CStr(c.DaysOpen) & IIf(c.IsClosed, " (to close)", " (open)")
 
     ' --- editable fields ---
-    txtSite.Value = c.claimSite
-    txtProvider.Value = c.ClaimProviderName
-    txtQuery.Value = c.claimQuery
-    txtCreationDate.Value = Format$(c.ClaimCreationDate, "dd-mmm-yyyy")
-    txtUpdatedSite.Value = c.ClaimUpdatedSite
+    txtSite.value = c.claimSite
+    txtProvider.value = c.ClaimProviderName
+    txtQuery.value = c.claimQuery
+    txtCreationDate.value = Format$(c.ClaimCreationDate, "dd-mmm-yyyy")
+    txtUpdatedSite.value = c.ClaimUpdatedSite
 
     ApplyPermissions
     SetEditingEnabled True
@@ -221,27 +221,27 @@ Private Sub cmdSave_Click()
     If m_claim Is Nothing Then Exit Sub
 
     ' --- validate before writing anything ---
-    If Trim$(txtSite.Value) = "" Then
+    If Trim$(txtSite.value) = "" Then
         MsgBox "Claim Site cannot be blank.", vbExclamation, "Check Details"
         txtSite.SetFocus
         Exit Sub
     End If
-    If Trim$(txtProvider.Value) = "" Then
+    If Trim$(txtProvider.value) = "" Then
         MsgBox "Provider Name cannot be blank.", vbExclamation, "Check Details"
         txtProvider.SetFocus
         Exit Sub
     End If
-    If Trim$(txtQuery.Value) = "" Then
+    If Trim$(txtQuery.value) = "" Then
         MsgBox "Claim Query cannot be blank.", vbExclamation, "Check Details"
         txtQuery.SetFocus
         Exit Sub
     End If
-    If Not IsDate(txtCreationDate.Value) Then
+    If Not IsDate(txtCreationDate.value) Then
         MsgBox "Creation Date is not a valid date.", vbExclamation, "Check Details"
         txtCreationDate.SetFocus
         Exit Sub
     End If
-    creationDate = CDate(txtCreationDate.Value)
+    creationDate = CDate(txtCreationDate.value)
     If creationDate > Date Then
         MsgBox "Creation Date cannot be in the future.", vbExclamation, "Check Details"
         txtCreationDate.SetFocus
@@ -252,11 +252,11 @@ Private Sub cmdSave_Click()
     Me.MousePointer = fmMousePointerHourGlass
 
     If repo.UpdateClaimDetails(m_claim.claimID, _
-                                Trim$(txtSite.Value), _
-                                Trim$(txtProvider.Value), _
-                                Trim$(txtQuery.Value), _
+                                Trim$(txtSite.value), _
+                                Trim$(txtProvider.value), _
+                                Trim$(txtQuery.value), _
                                 creationDate, _
-                                Trim$(txtUpdatedSite.Value), _
+                                Trim$(txtUpdatedSite.value), _
                                 siteDenied) Then
 
         ' Reload from the database rather than trusting the form's copy,
@@ -345,11 +345,11 @@ Private Sub ClearAll()
     lblDaysOpen.caption = ""
     lblHistoryCount.caption = ""
 
-    txtSite.Value = ""
-    txtProvider.Value = ""
-    txtQuery.Value = ""
-    txtCreationDate.Value = ""
-    txtUpdatedSite.Value = ""
+    txtSite.value = ""
+    txtProvider.value = ""
+    txtQuery.value = ""
+    txtCreationDate.value = ""
+    txtUpdatedSite.value = ""
 
     lstHistory.Clear
 

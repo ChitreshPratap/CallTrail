@@ -48,7 +48,7 @@ End Property
 ' The cached claim list. Loads on first use, then serves from memory.
 ' Pass forceReload:=True after a write, or for an explicit Refresh.
 ' ---------------------------------------------------------------------
-Public Function Claims(Optional ByVal forceReload As Boolean = False) As Collection
+Public Function claims(Optional ByVal forceReload As Boolean = False) As Collection
     
     If forceReload Or Not m_claimsLoaded Then
         SetStatus "Loading claims..."
@@ -56,7 +56,7 @@ Public Function Claims(Optional ByVal forceReload As Boolean = False) As Collect
         m_claimsLoaded = True
         SetStatus "Ready."
     End If
-    Set Claims = m_claims
+    Set claims = m_claims
 
 End Function
 

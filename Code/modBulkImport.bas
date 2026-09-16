@@ -68,7 +68,7 @@ Public Sub ProcessBulkClaims()
     Application.ScreenUpdating = False
 
     ' --- one bulk read of everything the user entered ---
-    dataArr = ws.Range(ws.Cells(2, COL_ID), ws.Cells(lastRow, COL_CREATED)).Value
+    dataArr = ws.Range(ws.Cells(2, COL_ID), ws.Cells(lastRow, COL_CREATED)).value
     ReDim errorArr(1 To UBound(dataArr, 1), 1 To 1)
 
     ' --- pull existing claim IDs from the DB ONCE, not once per row ---
@@ -110,7 +110,7 @@ Public Sub ProcessBulkClaims()
     Next i
 
     ' --- write all the error messages back in one go ---
-    ws.Range(ws.Cells(2, COL_ERROR), ws.Cells(lastRow, COL_ERROR)).Value = errorArr
+    ws.Range(ws.Cells(2, COL_ERROR), ws.Cells(lastRow, COL_ERROR)).value = errorArr
     ColorErrorColumn ws, lastRow
     Application.ScreenUpdating = True
 
@@ -177,7 +177,7 @@ Public Sub CheckBulkClaims()
     On Error GoTo Fail
     Application.ScreenUpdating = False
 
-    dataArr = ws.Range(ws.Cells(2, COL_ID), ws.Cells(lastRow, COL_CREATED)).Value
+    dataArr = ws.Range(ws.Cells(2, COL_ID), ws.Cells(lastRow, COL_CREATED)).value
     ReDim errorArr(1 To UBound(dataArr, 1), 1 To 1)
 
     Set existing = CreateObject("Scripting.Dictionary")
@@ -202,7 +202,7 @@ Public Sub CheckBulkClaims()
         End If
     Next i
 
-    ws.Range(ws.Cells(2, COL_ERROR), ws.Cells(lastRow, COL_ERROR)).Value = errorArr
+    ws.Range(ws.Cells(2, COL_ERROR), ws.Cells(lastRow, COL_ERROR)).value = errorArr
     ColorErrorColumn ws, lastRow
     Application.ScreenUpdating = True
 
@@ -247,12 +247,12 @@ Public Sub SetupBulkSheet()
 
     Application.ScreenUpdating = False
 
-    ws.Cells(1, COL_ID).Value = "ClaimID"
-    ws.Cells(1, COL_SITE).Value = "ClaimSite"
-    ws.Cells(1, COL_PROVIDER).Value = "ClaimProviderName"
-    ws.Cells(1, COL_QUERY).Value = "ClaimQuery"
-    ws.Cells(1, COL_CREATED).Value = "ClaimCreationDate"
-    ws.Cells(1, COL_ERROR).Value = "ValidationError"
+    ws.Cells(1, COL_ID).value = "ClaimID"
+    ws.Cells(1, COL_SITE).value = "ClaimSite"
+    ws.Cells(1, COL_PROVIDER).value = "ClaimProviderName"
+    ws.Cells(1, COL_QUERY).value = "ClaimQuery"
+    ws.Cells(1, COL_CREATED).value = "ClaimCreationDate"
+    ws.Cells(1, COL_ERROR).value = "ValidationError"
 
     With ws.Range(ws.Cells(1, 1), ws.Cells(1, COL_ERROR))
         .Font.Bold = True
@@ -320,8 +320,8 @@ Public Sub LoadClaimsFromFile()
     pasteRow = IIf(lastRow < 2, 2, lastRow + 1)
 
     ' single bulk transfer of columns A:E, skipping the source header row
-    ws.Range(ws.Cells(pasteRow, COL_ID), ws.Cells(pasteRow + srcLast - 2, COL_CREATED)).Value = _
-        srcWs.Range(srcWs.Cells(2, 1), srcWs.Cells(srcLast, 5)).Value
+    ws.Range(ws.Cells(pasteRow, COL_ID), ws.Cells(pasteRow + srcLast - 2, COL_CREATED)).value = _
+        srcWs.Range(srcWs.Cells(2, 1), srcWs.Cells(srcLast, 5)).value
 
     srcWb.Close saveChanges:=False
     Application.ScreenUpdating = True
@@ -396,7 +396,7 @@ Private Sub ColorErrorColumn(ws As Worksheet, ByVal lastRow As Long)
         .Font.color = RGB(150, 0, 0)
     End With
     For i = 2 To lastRow
-        If ws.Cells(i, COL_ERROR).Value <> "" Then
+        If ws.Cells(i, COL_ERROR).value <> "" Then
             ws.Cells(i, COL_ERROR).Interior.color = RGB(255, 214, 214)  ' soft red
         End If
     Next i

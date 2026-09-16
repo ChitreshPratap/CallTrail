@@ -161,7 +161,7 @@ Public Function ArchiveMatching(Optional ByRef historyMoved As Long) As Long
     Dim nArc As Long, nKeep As Long, nArcH As Long, nKeepH As Long
     Dim stamp As Date, userName As String
     Dim c As clsClaim
-    Dim repo As New clsClaimRepository
+    Dim repo As New ClsClaimRepository
 
     On Error GoTo Fail
     Set wb = OpenCentralDB()
@@ -191,7 +191,7 @@ Public Function ArchiveMatching(Optional ByRef historyMoved As Long) As Long
 
     ' --- decide what moves, using the in-memory claim objects ---
     Set toArchive = CreateObject("Scripting.Dictionary")
-    claimsData = wsClaims.Range(wsClaims.Cells(2, 1), wsClaims.Cells(lastRowC, lastColC)).Value
+    claimsData = wsClaims.Range(wsClaims.Cells(2, 1), wsClaims.Cells(lastRowC, lastColC)).value
 
     ReDim arcClaims(1 To UBound(claimsData, 1), 1 To lastColC + 2)   ' +2 for archive stamp
     ReDim keepClaims(1 To UBound(claimsData, 1), 1 To lastColC)
@@ -206,7 +206,7 @@ Public Function ArchiveMatching(Optional ByRef historyMoved As Long) As Long
             Next k
             arcClaims(nArc, lastColC + 1) = stamp
             arcClaims(nArc, lastColC + 2) = userName
-            toArchive(Trim$(LCase$(CStr(c.ClaimID)))) = True
+            toArchive(Trim$(LCase$(CStr(c.claimID)))) = True
         Else
             nKeep = nKeep + 1
             For k = 1 To lastColC
@@ -226,7 +226,7 @@ Public Function ArchiveMatching(Optional ByRef historyMoved As Long) As Long
     lastColH = wsHist.Cells(1, wsHist.Columns.Count).End(xlToLeft).Column
 
     If lastRowH >= 2 Then
-        histData = wsHist.Range(wsHist.Cells(2, 1), wsHist.Cells(lastRowH, lastColH)).Value
+        histData = wsHist.Range(wsHist.Cells(2, 1), wsHist.Cells(lastRowH, lastColH)).value
         ReDim arcHist(1 To UBound(histData, 1), 1 To lastColH + 2)
         ReDim keepHist(1 To UBound(histData, 1), 1 To lastColH)
 
@@ -254,7 +254,7 @@ Public Function ArchiveMatching(Optional ByRef historyMoved As Long) As Long
     ' =================================================================
     AppendBlock wsArcClaims, arcClaims, nArc, lastColC + 2
     If nArcH > 0 Then AppendBlock wsArcHist, arcHist, nArcH, lastColH + 2
-    wb.Save
+    wb.save
 
     ' =================================================================
     ' PHASE 2 - rewrite the working sheets with only the kept rows.
@@ -292,7 +292,7 @@ End Function
 Private Function ClaimFromRow(data As Variant, ByVal i As Long, hmap As Object) As clsClaim
     Dim c As New clsClaim
     On Error Resume Next
-    c.ClaimID = data(i, ColIdx(hmap, "ClaimID"))
+    c.claimID = data(i, ColIdx(hmap, "ClaimID"))
     c.ClaimStatus = data(i, ColIdx(hmap, "ClaimStatus"))
     c.ClaimCreationDate = data(i, ColIdx(hmap, "ClaimCreationDate"))
     c.ClaimClosedDate = data(i, ColIdx(hmap, "ClaimClosedDate"))
@@ -319,7 +319,7 @@ Private Sub AppendBlock(ws As Worksheet, data As Variant, ByVal n As Long, ByVal
 
     firstRow = ws.Cells(ws.Rows.Count, 1).End(xlUp).Row + 1
     If firstRow < 2 Then firstRow = 2
-    ws.Range(ws.Cells(firstRow, 1), ws.Cells(firstRow + n - 1, cols)).Value = trimmed
+    ws.Range(ws.Cells(firstRow, 1), ws.Cells(firstRow + n - 1, cols)).value = trimmed
 End Sub
 
 ' Replaces the sheet's data with only the kept rows.
@@ -350,7 +350,7 @@ Private Sub RewriteSheet(ws As Worksheet, data As Variant, ByVal n As Long, _
                 trimmed(r, k) = data(r, k)
             Next k
         Next r
-        ws.Range(ws.Cells(2, 1), ws.Cells(n + 1, cols)).Value = trimmed
+        ws.Range(ws.Cells(2, 1), ws.Cells(n + 1, cols)).value = trimmed
     End If
 
     ' --- delete whatever is left below them ---
@@ -381,3 +381,4 @@ Private Sub ResizeListObject(ws As Worksheet, ByVal n As Long, ByVal cols As Lon
     lo.Resize ws.Range(ws.Cells(1, 1), ws.Cells(newLast, cols))
     On Error GoTo 0
 End Sub
+

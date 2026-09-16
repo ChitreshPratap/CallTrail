@@ -47,12 +47,12 @@ End Sub
 Public Sub ShowAddClaimForm_tab(tabNumber As Integer)
     
     'frmAddClaim.Show
-    Dim uform As UserFormMain
-    Set uform = New UserFormMain
-    uform.setPage tabNumber
-    uform.Show
-    Unload uform
-    Set uform = Nothing
+    Dim uForm As UserFormMain
+    Set uForm = New UserFormMain
+    uForm.setPage tabNumber
+    uForm.Show
+    Unload uForm
+    Set uForm = Nothing
     
 End Sub
 
@@ -81,7 +81,8 @@ Public Sub ShowAdminSiteForm()
         MsgBox "This feature is restricted to Admin users.", vbExclamation, "Access Denied"
         Exit Sub
     End If
-    frmAdminSite.Show
+    'frmAdminSite.Show
+    frmAdminLocation.Show
 End Sub
 
 Public Sub ShowClaimHistoryViewer()

@@ -36,13 +36,14 @@ Attribute cboDateField.VB_VarHelpID = -1
 Private WithEvents txtSearch As MSForms.TextBox
 Attribute txtSearch.VB_VarHelpID = -1
 'Attribute txtSearch.VB_VarHelpID = -1
-Private WithEvents cmdApply As MSForms.CommandButton
+
+Private WithEvents cmdApply As MSForms.Label
 Attribute cmdApply.VB_VarHelpID = -1
 'Attribute cmdApply.VB_VarHelpID = -1
-Private WithEvents cmdClear As MSForms.CommandButton
+Private WithEvents cmdClear As MSForms.Label
 Attribute cmdClear.VB_VarHelpID = -1
 'Attribute cmdClear.VB_VarHelpID = -1
-Private WithEvents cmdRefresh As MSForms.CommandButton
+Private WithEvents cmdRefresh As MSForms.Label
 Attribute cmdRefresh.VB_VarHelpID = -1
 'Attribute cmdRefresh.VB_VarHelpID = -1
 Private WithEvents lstClaims As MSForms.ListBox
@@ -58,6 +59,9 @@ Private txtDateTo As MSForms.TextBox
 Private lblCount As MSForms.Label
 
 ' Detail labels
+Private frameDetails As MSForms.Frame
+Private multiPageDetails As MSForms.MultiPage
+Private lstViewHistory As MSForms.ListBox
 Private lblClaimID As MSForms.Label
 Private lblClaimSite As MSForms.Label
 Private lblProviderName As MSForms.Label
@@ -132,12 +136,13 @@ Private Sub IPage_InitPage(ctx As clsAppContext, pg As MSForms.Page)
     Set lblHistoryCallDate = BindControl(pg, "lblHistoryCallDate", IPage_PageTitle)
     Set lblHistoryCallComment = BindControl(pg, "lblHistoryCallComment", IPage_PageTitle)
     Set lblHistoryCallStatus = BindControl(pg, "lblHistoryCallStatus", IPage_PageTitle)
-
+    Set multiPageDetails = BindControl(pg, "MultiPageDetailsViewRecords", IPage_PageTitle)
+        
     cboStatus.List = Array("All", STATUS_PENDING, STATUS_CLOSED)
-    cboStatus.Value = "All"
+    cboStatus.value = "All"
     
     cboDateField.List = Array("Creation Date", "Insertion Date", "Last Updated", "Closed Date")
-    cboDateField.Value = "Creation Date"
+    cboDateField.value = "Creation Date"
 
     ConfigureClaimList lstClaims
     ConfigureHistoryList lstHistory
@@ -148,7 +153,18 @@ Private Sub IPage_InitPage(ctx As clsAppContext, pg As MSForms.Page)
     
 End Sub
 
-Public Sub ConfigureClaimList(lst As MSForms.ListBox)
+Private Sub ConfigureHistoryList(lst As MSForms.ListBox)
+
+    With lst
+        .ColumnCount = 4
+        .ColumnHeads = False
+        .ColumnWidths = "90;120;60;10"
+    End With
+    
+End Sub
+
+
+Private Sub ConfigureClaimList(lst As MSForms.ListBox)
       
     ' 3. Define your headers in an Array
     With lst
@@ -202,14 +218,14 @@ Private Sub ApplyFilters()
 
     If m_loading Then Exit Sub
 
-    Set allClaims = m_ctx.Claims()     ' cached; loads only if stale
+    Set allClaims = m_ctx.claims()     ' cached; loads only if stale
 
-    dFrom = ParseDateOrZero(txtDateFrom.Value)
-    dTo = ParseDateOrZero(txtDateTo.Value)
+    dFrom = ParseDateOrZero(txtDateFrom.value)
+    dTo = ParseDateOrZero(txtDateTo.value)
 
-    If Trim$(txtDateFrom.Value) <> "" And dFrom = 0 Then
+    If Trim$(txtDateFrom.value) <> "" And dFrom = 0 Then
         m_ctx.SetStatus "'From' date not recognised - ignoring it."
-    ElseIf Trim$(txtDateTo.Value) <> "" And dTo = 0 Then
+    ElseIf Trim$(txtDateTo.value) <> "" And dTo = 0 Then
         m_ctx.SetStatus "'To' date not recognised - ignoring it."
     End If
 
@@ -218,8 +234,8 @@ Private Sub ApplyFilters()
         Exit Sub
     End If
 
-    Set m_shown = FilterClaims(allClaims, CStr(cboStatus.Value), SelectedDateField(), _
-                                dFrom, dTo, CStr(txtSearch.Value))
+    Set m_shown = FilterClaims(allClaims, CStr(cboStatus.value), SelectedDateField(), _
+                                dFrom, dTo, CStr(txtSearch.value))
 
     ClearDetail
     clearDetailHistory
@@ -251,7 +267,7 @@ End Sub
 
 Private Function SelectedDateField() As ClaimDateField
     
-    Select Case CStr(cboDateField.Value)
+    Select Case CStr(cboDateField.value)
         Case "Insertion Date": SelectedDateField = cdfInsertionDate
         Case "Last Updated":   SelectedDateField = cdfLastUpdated
         Case "Closed Date":    SelectedDateField = cdfClosedDate
@@ -378,11 +394,11 @@ End Sub
 Private Sub cmdClear_Click()
 
     m_loading = True
-    cboStatus.Value = "All"
-    cboDateField.Value = "Creation Date"
-    txtDateFrom.Value = ""
-    txtDateTo.Value = ""
-    txtSearch.Value = ""
+    cboStatus.value = "All"
+    cboDateField.value = "Creation Date"
+    txtDateFrom.value = ""
+    txtDateTo.value = ""
+    txtSearch.value = ""
     m_loading = False
     ApplyFilters
     
@@ -408,68 +424,85 @@ End Sub
 
 Private Sub arrangeUI()
     
-  '  Dim m_pg As UserFormMain
-            
-        
+    'Dim m_pg As UserFormMain
+    Dim leftMargin As Double
+    
+    leftMargin = 25
+    
     With m_pg.framePageViewRecords
         
         .width = m_pg.Parent.width + 1
         .height = m_pg.Parent.height + 1
         .BackColor = VarnahUtil.getFadeColor(AppUtil.getThemeColor(), 0.9)
-        '.BackColor = vbYellow
         .Left = -1
         .Top = -1
+                
+        'Styling frame details
+        .frameDetailsViewRecords.Top = -1
+        .frameDetailsViewRecords.Left = .width - .frameDetailsViewRecords.width
+        .frameDetailsViewRecords.height = .height
+                        
+                        
+        .lblHeadingViewRecords.Top = 4.5
+        .lblHeadingViewRecords.Left = 9
         
-        .MultiPageDetails.Left = .width - .MultiPageDetails.width
-        .MultiPageDetails.height = .height
-        .MultiPageDetails.Top = -2
+        .lblHeadingULineViewRecords.Top = .lblHeadingViewRecords.Top + .lblHeadingViewRecords.height + 2
+        .lblHeadingULineViewRecords.Left = 9
+        .lblHeadingULineViewRecords.width = .frameDetailsViewRecords.Left - 2 * .lblHeadingViewRecords.Left
+        .lblHeadingULineViewRecords.height = 2
+                                        
+        multiPageDetails.Left = 0
+        multiPageDetails.Top = 0
+        multiPageDetails.height = .frameDetailsViewRecords.height
+        multiPageDetails.width = .frameDetailsViewRecords.width
+                                
                                 
         .frameFilterViewClaims.Left = 0
-        .frameFilterViewClaims.height = .MultiPageDetails.height
+        .frameFilterViewClaims.height = multiPageDetails.height
         .frameFilterViewClaims.Top = -2
         .frameFilterViewClaims.BorderStyle = fmBorderStyleNone
         .frameFilterViewClaims.ZOrder 0
         
-        .frameViewRecordDetails.width = .MultiPageDetails.width
+        .frameViewRecordDetails.width = multiPageDetails.width
         .frameViewRecordDetails.Left = 0
-        .frameViewRecordDetails.height = .MultiPageDetails.height
+        .frameViewRecordDetails.height = multiPageDetails.height
         .frameViewRecordDetails.Top = -2
         .frameViewRecordDetails.BorderStyle = fmBorderStyleNone
         .frameViewRecordDetails.ZOrder 1
         
-        .frameViewHistoryDetail.width = .MultiPageDetails.width
+        .frameViewHistoryDetail.width = multiPageDetails.width
         .frameViewHistoryDetail.Left = 0
-        .frameViewHistoryDetail.height = .MultiPageDetails.height
+        .frameViewHistoryDetail.height = multiPageDetails.height
         .frameViewHistoryDetail.Top = -2
         .frameViewHistoryDetail.BorderStyle = fmBorderStyleNone
         .frameViewHistoryDetail.ZOrder 1
                         
-        .frameViewRecords.Left = 10
-        .frameViewRecords.width = .width - .MultiPageDetails.width - 2 * .frameViewRecords.Left
-        .frameViewRecords.Top = 50
-        .frameViewRecords.height = .height / 2
-        .frameViewRecords.ZOrder 1
+'        .frameViewRecords.Left = 10
+'        .frameViewRecords.width = .width - multiPageDetails.width - 2 * .frameViewRecords.Left
+'        .frameViewRecords.Top = 50
+'        .frameViewRecords.height = .height / 2
+'        .frameViewRecords.ZOrder 1
         
         
-        .lstViewClaims.Left = 5
-        .lstViewClaims.Top = 30
-        .lstViewClaims.height = .frameViewRecords.height - .lstViewClaims.Top - 10
-        .lstViewClaims.width = .frameViewRecords.width - 2 * .lstViewClaims.Left
+        .lstViewClaims.Left = leftMargin + 5
+        .lstViewClaims.Top = .lblHeadingULineViewRecords.Top + 30
+        .lstViewClaims.height = ((.height - .lstViewClaims.Top) / 2) - 30
+        .lstViewClaims.width = .frameDetailsViewRecords.Left - 2 * .lstViewClaims.Left + 10
         .lstViewClaims.BorderStyle = fmBorderStyleSingle
         .lstViewClaims.Font.Name = "Segoe UI"
-        .lstViewClaims.Font.Size = 10
+        .lstViewClaims.Font.Size = 9
         
                         
-        .frameViewHistory.Left = 10
-        .frameViewHistory.width = .width - .frameFilterViewClaims.width - 2 * .frameViewHistory.Left
-        .frameViewHistory.Top = .frameViewRecords.height + .frameViewRecords.Top + 10
-        .frameViewHistory.height = .height / 3
-        .frameViewHistory.ZOrder 1
+'        .frameViewHistory.Left = 10
+'        .frameViewHistory.width = .width - .frameFilterViewClaims.width - 2 * .frameViewHistory.Left
+'        .frameViewHistory.Top = .frameViewRecords.height + .frameViewRecords.Top + 10
+'        .frameViewHistory.height = .height / 3
+'        .frameViewHistory.ZOrder 1
         
-        .lstViewHistory.Left = 5
-        .lstViewHistory.Top = 30
-        .lstViewHistory.height = .frameViewHistory.height - .lstViewHistory.Top - 10
-        .lstViewHistory.width = .frameViewHistory.width - 2 * .lstViewHistory.Left
+        .lstViewHistory.Left = leftMargin + 5
+        .lstViewHistory.Top = .lstViewClaims.Top + .lstViewClaims.height + 30
+        .lstViewHistory.height = .height - .lstViewHistory.Top - 30
+        .lstViewHistory.width = .frameDetailsViewRecords.Left - 2 * .lstViewHistory.Left + 10
         .lstViewHistory.BorderStyle = fmBorderStyleSingle
         .lstViewHistory.Font.Name = "Segoe UI"
         .lstViewHistory.Font.Size = 10
@@ -493,17 +526,21 @@ Private Sub arrangeUI()
     collectionStyledControls.Add Styler.getStyledBoxULine(txtSearch, "Claim Id*")
     collectionStyledControls.Add Styler.getStyledBoxULine(txtDateFrom, "Date From")
     collectionStyledControls.Add Styler.getStyledBoxULine(txtDateTo, "Date To")
+    collectionStyledControls.Add Styler.getStyleButton(cmdApply)
+    collectionStyledControls.Add Styler.getStyleButton(cmdClear)
+    collectionStyledControls.Add Styler.getStyleButton(cmdRefresh)
     'collectionStyledControls.Add Styler.getStyledBoxULine(cboDateField, "Creation Date*")
 
     'Adding headers to listboxClaims
     Dim headersClaimList As Variant
     Dim headersHistoryList As Variant
-    headersClaimList = Array("Claim ID", "Claim Site", "Provider Name", "Claim Status", "Attempt", "Creation Date")
-    headersHistoryList = Array("Caller Name", "Call Date", "Status", "Comment", "Attempt")
+    headersClaimList = Array("Claim ID", "Site", "Provider Name", "Status", "Attempt", "Creation Date")
+    headersHistoryList = Array("Caller Name", "Call Date", "Status", "Comment")
     
     ' 4. Call the helper function
-    ListBoxUtil.CreateListBoxHeaders m_pg.framePageViewRecords.lstViewClaims, headersClaimList
-    ListBoxUtil.CreateListBoxHeaders m_pg.framePageViewRecords.lstViewHistory, headersHistoryList
+    ListBoxUtil.generateListBoxHeaders lstClaims, headersClaimList
+    DoEvents
+    ListBoxUtil.generateListBoxHeaders lstHistory, headersHistoryList
     
 
  End Sub

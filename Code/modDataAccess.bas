@@ -58,7 +58,7 @@ Public Function AddClaim(ByVal claimID As String, ByVal claimSite As String, _
     rowArr(1, ColIdx(hmap, "ClaimUpdatedSite")) = claimSite
     rowArr(1, ColIdx(hmap, "ClaimInsertionDate")) = Now
     rowArr(1, ColIdx(hmap, "ClaimInsertedBy")) = GetWindowsUserName()
-    ws.Range(ws.Cells(newRow, 1), ws.Cells(newRow, lastCol)).Value = rowArr
+    ws.Range(ws.Cells(newRow, 1), ws.Cells(newRow, lastCol)).value = rowArr
     ' LastUpdatedDate / LastUpdatedBy / LastComment / ClaimClosedDate stay
     ' blank until the first call is logged - see LogCallAndUpdateStatus.
 
@@ -102,7 +102,7 @@ Public Function LogCallAndUpdateStatus(ByVal claimID As String, ByVal comment As
     Set hmapC = BuildHeaderMap(wsClaims)   ' each header row scanned ONCE
     Set hmapH = BuildHeaderMap(wsHist)
     statusCol = ColIdx(hmapC, "ClaimStatus")
-    If LCase$(Trim$(wsClaims.Cells(claimRow, statusCol).Value)) = LCase$(STATUS_CLOSED) Then
+    If LCase$(Trim$(wsClaims.Cells(claimRow, statusCol).value)) = LCase$(STATUS_CLOSED) Then
         MsgBox "This claim is already Closed and cannot accept further calls.", vbExclamation
         CloseCentralDB wb, False
         LogCallAndUpdateStatus = False
@@ -119,18 +119,18 @@ Public Function LogCallAndUpdateStatus(ByVal claimID As String, ByVal comment As
     histArr(1, ColIdx(hmapH, "CallDateTime")) = stamp
     histArr(1, ColIdx(hmapH, "CallerComment")) = comment
     histArr(1, ColIdx(hmapH, "CallerStatus")) = newStatus
-    wsHist.Range(wsHist.Cells(histRow, 1), wsHist.Cells(histRow, histLastCol)).Value = histArr
+    wsHist.Range(wsHist.Cells(histRow, 1), wsHist.Cells(histRow, histLastCol)).value = histArr
 
     ' -- refresh Claims rollup / audit fields --
-    wsClaims.Cells(claimRow, ColIdx(hmapC, "Attempt")).Value = _
-        wsClaims.Cells(claimRow, ColIdx(hmapC, "Attempt")).Value + 1
-    wsClaims.Cells(claimRow, statusCol).Value = newStatus
-    wsClaims.Cells(claimRow, ColIdx(hmapC, "LastUpdatedDate")).Value = stamp
-    wsClaims.Cells(claimRow, ColIdx(hmapC, "LastUpdatedBy")).Value = userName
-    wsClaims.Cells(claimRow, ColIdx(hmapC, "LastComment")).Value = comment
+    wsClaims.Cells(claimRow, ColIdx(hmapC, "Attempt")).value = _
+        wsClaims.Cells(claimRow, ColIdx(hmapC, "Attempt")).value + 1
+    wsClaims.Cells(claimRow, statusCol).value = newStatus
+    wsClaims.Cells(claimRow, ColIdx(hmapC, "LastUpdatedDate")).value = stamp
+    wsClaims.Cells(claimRow, ColIdx(hmapC, "LastUpdatedBy")).value = userName
+    wsClaims.Cells(claimRow, ColIdx(hmapC, "LastComment")).value = comment
 
     If LCase$(newStatus) = LCase$(STATUS_CLOSED) Then
-        wsClaims.Cells(claimRow, ColIdx(hmapC, "ClaimClosedDate")).Value = stamp
+        wsClaims.Cells(claimRow, ColIdx(hmapC, "ClaimClosedDate")).value = stamp
     End If
 
     CloseCentralDB wb, True
@@ -170,9 +170,9 @@ Public Function ChangeUpdatedSite(ByVal claimID As String, ByVal newSite As Stri
     End If
 
     Set hmap = BuildHeaderMap(ws)
-    ws.Cells(claimRow, ColIdx(hmap, "ClaimUpdatedSite")).Value = newSite
-    ws.Cells(claimRow, ColIdx(hmap, "LastUpdatedDate")).Value = Now
-    ws.Cells(claimRow, ColIdx(hmap, "LastUpdatedBy")).Value = GetWindowsUserName()
+    ws.Cells(claimRow, ColIdx(hmap, "ClaimUpdatedSite")).value = newSite
+    ws.Cells(claimRow, ColIdx(hmap, "LastUpdatedDate")).value = Now
+    ws.Cells(claimRow, ColIdx(hmap, "LastUpdatedBy")).value = GetWindowsUserName()
 
     CloseCentralDB wb, True
     ChangeUpdatedSite = True
@@ -214,21 +214,21 @@ Public Function UpdateClaimDetails(ByVal claimID As String, ByVal claimSite As S
 
     Set hmap = BuildHeaderMap(ws)
 
-    ws.Cells(claimRow, ColIdx(hmap, "ClaimSite")).Value = claimSite
-    ws.Cells(claimRow, ColIdx(hmap, "ClaimProviderName")).Value = providerName
-    ws.Cells(claimRow, ColIdx(hmap, "ClaimQuery")).Value = claimQuery
-    ws.Cells(claimRow, ColIdx(hmap, "ClaimCreationDate")).Value = creationDate
+    ws.Cells(claimRow, ColIdx(hmap, "ClaimSite")).value = claimSite
+    ws.Cells(claimRow, ColIdx(hmap, "ClaimProviderName")).value = providerName
+    ws.Cells(claimRow, ColIdx(hmap, "ClaimQuery")).value = claimQuery
+    ws.Cells(claimRow, ColIdx(hmap, "ClaimCreationDate")).value = creationDate
 
     If Trim$(updatedSite) <> "" Then
         If IsCurrentUserAdmin(wb) Then
-            ws.Cells(claimRow, ColIdx(hmap, "ClaimUpdatedSite")).Value = updatedSite
+            ws.Cells(claimRow, ColIdx(hmap, "ClaimUpdatedSite")).value = updatedSite
         Else
             siteChangeDenied = True
         End If
     End If
 
-    ws.Cells(claimRow, ColIdx(hmap, "LastUpdatedDate")).Value = Now
-    ws.Cells(claimRow, ColIdx(hmap, "LastUpdatedBy")).Value = GetWindowsUserName()
+    ws.Cells(claimRow, ColIdx(hmap, "LastUpdatedDate")).value = Now
+    ws.Cells(claimRow, ColIdx(hmap, "LastUpdatedBy")).value = GetWindowsUserName()
 
     CloseCentralDB wb, True
     UpdateClaimDetails = True
@@ -240,7 +240,7 @@ Fail:
     UpdateClaimDetails = False
 End Function
 
- ---------------------------------------------------------------------
+' ---------------------------------------------------------------------
 ' Admin-only: reopen a Closed claim so calling can resume.
 '
 ' Unlike UpdateClaimDetails, this DOES write a history row. Reopening is
@@ -290,7 +290,7 @@ Public Function ReopenClaim(ByVal claimID As String, ByVal reason As String) As 
         Exit Function
     End If
 
-    If LCase$(Trim$(wsClaims.Cells(claimRow, ColIdx(hmapC, "ClaimStatus")).Value)) _
+    If LCase$(Trim$(wsClaims.Cells(claimRow, ColIdx(hmapC, "ClaimStatus")).value)) _
        <> LCase$(STATUS_CLOSED) Then
         MsgBox "Claim '" & claimID & "' is not Closed, so there is nothing to reopen.", _
                vbExclamation, "Not Closed"
@@ -314,14 +314,14 @@ Public Function ReopenClaim(ByVal claimID As String, ByVal reason As String) As 
     ' logged call when someone reads or counts the history.
     histArr(1, ColIdx(hmapH, "CallerComment")) = "[REOPENED BY ADMIN] " & Trim$(reason)
     histArr(1, ColIdx(hmapH, "CallerStatus")) = STATUS_PENDING
-    wsHist.Range(wsHist.Cells(histRow, 1), wsHist.Cells(histRow, histLastCol)).Value = histArr
+    wsHist.Range(wsHist.Cells(histRow, 1), wsHist.Cells(histRow, histLastCol)).value = histArr
 
     ' --- flip the claim back to Pending ---
-    wsClaims.Cells(claimRow, ColIdx(hmapC, "ClaimStatus")).Value = STATUS_PENDING
+    wsClaims.Cells(claimRow, ColIdx(hmapC, "ClaimStatus")).value = STATUS_PENDING
     wsClaims.Cells(claimRow, ColIdx(hmapC, "ClaimClosedDate")).ClearContents
-    wsClaims.Cells(claimRow, ColIdx(hmapC, "LastUpdatedDate")).Value = stamp
-    wsClaims.Cells(claimRow, ColIdx(hmapC, "LastUpdatedBy")).Value = userName
-    wsClaims.Cells(claimRow, ColIdx(hmapC, "LastComment")).Value = _
+    wsClaims.Cells(claimRow, ColIdx(hmapC, "LastUpdatedDate")).value = stamp
+    wsClaims.Cells(claimRow, ColIdx(hmapC, "LastUpdatedBy")).value = userName
+    wsClaims.Cells(claimRow, ColIdx(hmapC, "LastComment")).value = _
         "[REOPENED BY ADMIN] " & Trim$(reason)
     ' Attempt intentionally left alone - see the note above.
 
@@ -351,7 +351,7 @@ Public Function GetAllClaims() As Variant
     If lastRow < 2 Then
         GetAllClaims = Empty
     Else
-        GetAllClaims = ws.Range(ws.Cells(1, 1), ws.Cells(lastRow, lastCol)).Value
+        GetAllClaims = ws.Range(ws.Cells(1, 1), ws.Cells(lastRow, lastCol)).value
     End If
     CloseCentralDB wb, False
     Exit Function
@@ -388,7 +388,7 @@ Public Function GetHistoryForClaim(ByVal claimID As String) As Variant
     End If
 
     ' ONE bulk read of the whole History block, then filter in memory.
-    dataArr = ws.Range(ws.Cells(2, 1), ws.Cells(lastRow, lastCol)).Value
+    dataArr = ws.Range(ws.Cells(2, 1), ws.Cells(lastRow, lastCol)).value
 
     matchCount = 0
     For i = 1 To UBound(dataArr, 1)

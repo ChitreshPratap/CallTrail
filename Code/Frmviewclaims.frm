@@ -50,11 +50,11 @@ Private Sub UserForm_Initialize()
 
     ' Status filter: blank/All means no status filtering
     cboStatus.List = Array("All", "Pending", "Closed")
-    cboStatus.Value = "All"
+    cboStatus.value = "All"
 
     ' Which date the range applies to
     cboDateField.List = Array("Creation Date", "Insertion Date", "Last Updated", "Closed Date")
-    cboDateField.Value = "Creation Date"
+    cboDateField.value = "Creation Date"
 
     
     ' Claims list: 6 columns
@@ -117,15 +117,15 @@ Private Sub ApplyFilters()
     If m_loading Then Exit Sub
     If m_allClaims Is Nothing Then Exit Sub
 
-    dFrom = ParseDateOrZero(txtDateFrom.Value)
-    dTo = ParseDateOrZero(txtDateTo.Value)
+    dFrom = ParseDateOrZero(txtDateFrom.value)
+    dTo = ParseDateOrZero(txtDateTo.value)
 
     ' Warn on unparseable input rather than silently ignoring it - a user
     ' who typed a date and sees it quietly do nothing assumes the filter
     ' is broken.
-    If Trim$(txtDateFrom.Value) <> "" And dFrom = 0 Then
+    If Trim$(txtDateFrom.value) <> "" And dFrom = 0 Then
         lblStatusBar.caption = "'From' date not recognised - ignoring it."
-    ElseIf Trim$(txtDateTo.Value) <> "" And dTo = 0 Then
+    ElseIf Trim$(txtDateTo.value) <> "" And dTo = 0 Then
         lblStatusBar.caption = "'To' date not recognised - ignoring it."
     End If
 
@@ -135,10 +135,10 @@ Private Sub ApplyFilters()
     End If
 
     Set m_shownClaims = FilterClaims(m_allClaims, _
-                                      CStr(cboStatus.Value), _
+                                      CStr(cboStatus.value), _
                                       SelectedDateField(), _
                                       dFrom, dTo, _
-                                      CStr(txtSearch.Value))
+                                      CStr(txtSearch.value))
 
     ClearDetailPanel
     lstClaims.Clear
@@ -177,7 +177,7 @@ End Sub
 
 Private Function SelectedDateField() As ClaimDateField
 
-    Select Case CStr(cboDateField.Value)
+    Select Case CStr(cboDateField.value)
         Case "Insertion Date": SelectedDateField = cdfInsertionDate
         Case "Last Updated":   SelectedDateField = cdfLastUpdated
         Case "Closed Date":    SelectedDateField = cdfClosedDate
@@ -295,11 +295,11 @@ End Sub
 
 Private Sub cmdClear_Click()
     m_loading = True
-    cboStatus.Value = "All"
-    cboDateField.Value = "Creation Date"
-    txtDateFrom.Value = ""
-    txtDateTo.Value = ""
-    txtSearch.Value = ""
+    cboStatus.value = "All"
+    cboDateField.value = "Creation Date"
+    txtDateFrom.value = ""
+    txtDateTo.value = ""
+    txtSearch.value = ""
     m_loading = False
     ApplyFilters
 End Sub
@@ -340,7 +340,7 @@ End Sub
 Private Sub CreateListBoxHeaders(lst As MSForms.ListBox, headerNames As Variant)
     Dim i As Integer
     Dim lbl As MSForms.Label
-    Dim CurrentLeft As Single
+    Dim currentLeft As Single
     Dim colWidths() As String
     Dim singleWidth As Single
     Dim ctrl As control
@@ -351,7 +351,7 @@ Private Sub CreateListBoxHeaders(lst As MSForms.ListBox, headerNames As Variant)
     Next ctrl
 
     ' 2. Start positioning at the left edge of the ListBox
-    CurrentLeft = lst.Left
+    currentLeft = lst.Left
     
     ' 3. Parse the ColumnWidths property (e.g., "50;100;75")
     If lst.ColumnWidths <> "" Then
@@ -375,7 +375,7 @@ Private Sub CreateListBoxHeaders(lst As MSForms.ListBox, headerNames As Variant)
         ' Format and position the label
         With lbl
             .caption = " " & headerNames(i)
-            .Left = CurrentLeft
+            .Left = currentLeft
             .Top = lst.Top - 15          ' Place it 15 points above the ListBox
             .width = singleWidth
             .height = 15
@@ -386,6 +386,6 @@ Private Sub CreateListBoxHeaders(lst As MSForms.ListBox, headerNames As Variant)
         End With
 
         ' Move the starting position for the next label
-        CurrentLeft = CurrentLeft + singleWidth
+        currentLeft = currentLeft + singleWidth
     Next i
 End Sub

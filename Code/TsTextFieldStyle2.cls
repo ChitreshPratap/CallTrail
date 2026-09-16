@@ -47,9 +47,9 @@ Sub Init(mukhTextBox As control, Optional placeholder As String = "Enter Value")
     var_lblLine.Left = var_lblCaption.Left - 2
     var_lblLine.width = var_lblCaption.width + 2
     var_lblLine.height = 1.3
-    var_lblLine.BackColor = VarnahUtil.getFadeColor(var_mukhTextBox.ForeColor, -0.3)
+    var_lblLine.BackColor = VarnahUtil.getFadeColor(var_mukhTextBox.foreColor, -0.3)
     
-    var_lblCaption.ForeColor = VarnahUtil.getFadeColor(var_mukhTextBox.ForeColor, 0.55)
+    var_lblCaption.foreColor = VarnahUtil.getFadeColor(var_mukhTextBox.foreColor, 0.55)
     var_lblCaption.ZOrder (1)
 
 End Sub
@@ -59,7 +59,7 @@ Sub styleWithText()
     var_lblCaption.Font.Size = var_mukhTextBox.Font.Size - 1
     var_lblCaption.height = var_lblCaption.Font.Size + 6
     var_lblCaption.Font.Bold = True
-    var_lblCaption.ForeColor = VarnahUtil.getFadeColor(var_mukhTextBox.ForeColor, -0.3)
+    var_lblCaption.foreColor = VarnahUtil.getFadeColor(var_mukhTextBox.foreColor, -0.3)
     
     var_lblCaption.Top = var_mukhTextBox.Top - var_lblCaption.height
 '    var_lblCaption.Font.Size = var_mukhTextBox.Font.Size - 2
@@ -79,7 +79,7 @@ Sub styleWithoutText()
     var_lblCaption.width = var_mukhTextBox.width - 7.5
     var_lblCaption.Left = var_mukhTextBox.Left + 7.5
     
-    var_lblCaption.ForeColor = VarnahUtil.getFadeColor(var_mukhTextBox.ForeColor, 0.55)
+    var_lblCaption.foreColor = VarnahUtil.getFadeColor(var_mukhTextBox.foreColor, 0.55)
     var_lblCaption.ZOrder (1)
     
     

@@ -17,21 +17,21 @@ Option Explicit
 
 Private Sub cmdSave_Click()
     
-    If Trim(txtClaimID.Value) = "" Or Trim(txtClaimSite.Value) = "" _
-       Or Trim(txtProviderName.Value) = "" Or Trim(txtClaimQuery.Value) = "" _
-       Or Trim(dtCreationDate.Value) = "" Then
+    If Trim(txtClaimID.value) = "" Or Trim(txtClaimSite.value) = "" _
+       Or Trim(txtProviderName.value) = "" Or Trim(txtClaimQuery.value) = "" _
+       Or Trim(dtCreationDate.value) = "" Then
         MsgBox "ClaimID, Site, Provider Name, Query and Creation Date are all required.", vbExclamation
         Exit Sub
     End If
     
-    If Not IsDate(dtCreationDate.Value) Then
+    If Not IsDate(dtCreationDate.value) Then
         MsgBox "Creation Date is not a valid date.", vbExclamation
         Exit Sub
     End If
 
-    If AddClaim(Trim(txtClaimID.Value), Trim(txtClaimSite.Value), _
-                Trim(txtProviderName.Value), Trim(txtClaimQuery.Value), _
-                CDate(dtCreationDate.Value)) Then
+    If AddClaim(Trim(txtClaimID.value), Trim(txtClaimSite.value), _
+                Trim(txtProviderName.value), Trim(txtClaimQuery.value), _
+                CDate(dtCreationDate.value)) Then
         MsgBox "Claim added.", vbInformation
         
         resetAddClaim
@@ -48,11 +48,11 @@ End Sub
 
 Private Sub resetAddClaim()
         
-    txtClaimID.Value = ""
-    txtClaimSite.Value = ""
-    txtProviderName.Value = ""
-    txtClaimQuery.Value = ""
-    dtCreationDate.Value = ""
+    txtClaimID.value = ""
+    txtClaimSite.value = ""
+    txtProviderName.value = ""
+    txtClaimQuery.value = ""
+    dtCreationDate.value = ""
     
 End Sub
 

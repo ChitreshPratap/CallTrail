@@ -11,9 +11,9 @@ Option Explicit
 
 Dim var_frm As UserFormMain
 
-Public Property Set setForm(uform As UserFormMain)
+Public Property Set setForm(uForm As UserFormMain)
 
-    Set var_frm = uform
+    Set var_frm = uForm
 
 End Property
 
@@ -29,11 +29,11 @@ Public Sub cmdSave_Click(var_frm As UserFormMain)
     Dim frm As UserFormMain
     Set frm = var_frm
         
-    tClaimId = Trim(frm.txtClaimID.Value)
-    tClaimSite = Trim(frm.txtClaimSite.Value)
-    tProviderName = Trim(frm.txtProviderName.Value)
-    tClaimQuery = Trim(frm.txtClaimQuery.Value)
-    tDtCreationDate = Trim(frm.dtCreationDate.Value)
+    tClaimId = Trim(frm.txtClaimID.value)
+    tClaimSite = Trim(frm.txtClaimSite.value)
+    tProviderName = Trim(frm.txtProviderName.value)
+    tClaimQuery = Trim(frm.txtClaimQuery.value)
+    tDtCreationDate = Trim(frm.dtCreationDate.value)
         
     If tClaimId = "" Then
         MsgBox "'Claim ID' is required.", vbExclamation
@@ -81,11 +81,11 @@ End Sub
 
 Public Sub resetAddClaim(var_frm As UserFormMain)
         
-    var_frm.txtClaimID.Value = ""
-    var_frm.txtClaimSite.Value = ""
-    var_frm.txtProviderName.Value = ""
-    var_frm.txtClaimQuery.Value = ""
-    var_frm.dtCreationDate.Value = ""
+    var_frm.txtClaimID.value = ""
+    var_frm.txtClaimSite.value = ""
+    var_frm.txtProviderName.value = ""
+    var_frm.txtClaimQuery.value = ""
+    var_frm.dtCreationDate.value = ""
     
 End Sub
 
