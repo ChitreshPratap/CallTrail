@@ -198,8 +198,8 @@ Private Function CopySheet(srcWb As Workbook, ByVal srcName As String, _
     End If
 
     ' ONE read, ONE write - no clipboard, no per-cell loop
-    data = src.Range(src.Cells(1, 1), src.Cells(lastRow, lastCol)).Value
-    dest.Range(dest.Cells(1, 1), dest.Cells(lastRow, lastCol)).Value = data
+    data = src.Range(src.Cells(1, 1), src.Cells(lastRow, lastCol)).value
+    dest.Range(dest.Cells(1, 1), dest.Cells(lastRow, lastCol)).value = data
 
     FormatHeader dest, lastCol
     dest.Rows(1).AutoFilter
@@ -233,8 +233,8 @@ End Function
 Private Sub FormatHeader(ws As Worksheet, ByVal lastCol As Long)
     With ws.Range(ws.Cells(1, 1), ws.Cells(1, lastCol))
         .Font.Bold = True
-        .Font.Color = RGB(255, 255, 255)
-        .Interior.Color = RGB(31, 78, 120)
+        .Font.color = RGB(255, 255, 255)
+        .Interior.color = RGB(31, 78, 120)
         .HorizontalAlignment = xlCenter
     End With
     ws.Rows(1).AutoFilter
@@ -257,27 +257,27 @@ Private Sub WriteInfoSheet(ByVal takenAt As Date, ByVal nClaims As Long, ByVal n
     Set ws = GetOrCreateSheet(LOCAL_INFO)
     ws.Cells.Clear
 
-    ws.Range("A1").Value = "Database Snapshot"
+    ws.Range("A1").value = "Database Snapshot"
     ws.Range("A1").Font.Size = 14
     ws.Range("A1").Font.Bold = True
 
-    ws.Range("A3").Value = "Downloaded"
-    ws.Range("B3").Value = Format$(takenAt, "dd-mmm-yyyy hh:nn:ss")
-    ws.Range("A4").Value = "Downloaded by"
-    ws.Range("B4").Value = GetWindowsUserName()
-    ws.Range("A5").Value = "Source"
-    ws.Range("B5").Value = DB_PATH
+    ws.Range("A3").value = "Downloaded"
+    ws.Range("B3").value = Format$(takenAt, "dd-mmm-yyyy hh:nn:ss")
+    ws.Range("A4").value = "Downloaded by"
+    ws.Range("B4").value = GetWindowsUserName()
+    ws.Range("A5").value = "Source"
+    ws.Range("B5").value = DB_PATH
 
-    ws.Range("A7").Value = "Sheet"
-    ws.Range("B7").Value = "Rows"
+    ws.Range("A7").value = "Sheet"
+    ws.Range("B7").value = "Rows"
     ws.Range("A7:B7").Font.Bold = True
 
-    ws.Range("A8").Value = LOCAL_CLAIMS:       ws.Range("B8").Value = nClaims
-    ws.Range("A9").Value = LOCAL_HISTORY:      ws.Range("B9").Value = nHist
-    ws.Range("A10").Value = LOCAL_ARC_CLAIMS:  ws.Range("B10").Value = nArcClaims
-    ws.Range("A11").Value = LOCAL_ARC_HISTORY: ws.Range("B11").Value = nArcHist
+    ws.Range("A8").value = LOCAL_CLAIMS:       ws.Range("B8").value = nClaims
+    ws.Range("A9").value = LOCAL_HISTORY:      ws.Range("B9").value = nHist
+    ws.Range("A10").value = LOCAL_ARC_CLAIMS:  ws.Range("B10").value = nArcClaims
+    ws.Range("A11").value = LOCAL_ARC_HISTORY: ws.Range("B11").value = nArcHist
 
-    ws.Range("A13").Value = "This is a point-in-time snapshot. It does not refresh, and " & _
+    ws.Range("A13").value = "This is a point-in-time snapshot. It does not refresh, and " & _
                             "editing these sheets does not change the central database."
     ws.Range("A13").Font.Italic = True
 
