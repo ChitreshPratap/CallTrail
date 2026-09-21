@@ -1,6 +1,11 @@
 Attribute VB_Name = "modUtils"
 Option Explicit
 
+Private savedScreenUpdating As Boolean
+Private savedCalculation As XlCalculation
+Private savedEnableEvents As Boolean
+
+
 ' =====================================================================
 ' modUtils
 ' Generic helpers used across the app. Keep this file free of any
@@ -26,23 +31,24 @@ End Function
 ' Defaulting an unknown person to a working role meant anyone who opened
 ' the file could add and edit claims.
 ' ---------------------------------------------------------------------
-Public Function GetUserRecord(dbWb As Workbook, ByRef role As String, _
-                               ByRef defaultLocation As String) As Boolean
+Public Function GetUserRecord(dbWb As Workbook, ByRef Role As String, _
+                               ByRef DefaultLocation As String) As Boolean
+    
     Dim ws As Worksheet, lastRow As Long, i As Long
     Dim nameCol As Long, roleCol As Long, locCol As Long
     Dim winUser As String
     Dim data As Variant
 
-    role = "Guest"
-    defaultLocation = ""
+    Role = "Guest"
+    DefaultLocation = ""
     winUser = LCase$(Trim$(GetWindowsUserName()))
 
     On Error GoTo NotFound
     Set ws = dbWb.Sheets(SHEET_USERS)
     nameCol = GetColIndex(ws, "UserName")
     roleCol = GetColIndex(ws, "Role")
-
-    ' DefaultLocation is optional - an older Users sheet may not have it
+    
+     ' DefaultLocation is optional - an older Users sheet may not have it
     locCol = 0
     On Error Resume Next
     locCol = GetColIndex(ws, "DefaultLocation")
@@ -51,13 +57,13 @@ Public Function GetUserRecord(dbWb As Workbook, ByRef role As String, _
     lastRow = ws.Cells(ws.Rows.Count, nameCol).End(xlUp).Row
     If lastRow < 2 Then GoTo NotFound
 
-    data = ws.Range(ws.Cells(2, 1), ws.Cells(lastRow, ws.Cells(1, ws.Columns.Count).End(xlToLeft).Column)).Value
+    data = ws.Range(ws.Cells(2, 1), ws.Cells(lastRow, ws.Cells(1, ws.Columns.Count).End(xlToLeft).Column)).value
 
     For i = 1 To UBound(data, 1)
         If LCase$(Trim$(CStr(data(i, nameCol) & ""))) = winUser Then
-            role = Trim$(CStr(data(i, roleCol) & ""))
-            If role = "" Then role = "User"
-            If locCol > 0 Then defaultLocation = Trim$(CStr(data(i, locCol) & ""))
+            Role = Trim$(CStr(data(i, roleCol) & ""))
+            If Role = "" Then Role = "User"
+            If locCol > 0 Then DefaultLocation = Trim$(CStr(data(i, locCol) & ""))
             GetUserRecord = True
             Exit Function
         End If
@@ -69,17 +75,20 @@ End Function
 
 Public Function GetCurrentUserRole(dbWb As Workbook) As String
     Dim ws As Worksheet, lastRow As Long, i As Long
-    Dim winUser As String, nameCol As Long, roleCol As Long
+    Dim winUser As String, nameCol As Long, roleCol As Long, locationCol As Long
+    
+    
     winUser = GetWindowsUserName()
 
     Set ws = dbWb.Sheets(SHEET_USERS)
     nameCol = GetColIndex(ws, "UserName")
     roleCol = GetColIndex(ws, "Role")
+    locationCol = GetColIndex(ws, "DefaultLocation")
     lastRow = ws.Cells(ws.Rows.Count, nameCol).End(xlUp).Row
 
     For i = 2 To lastRow
-        If LCase$(Trim$(ws.Cells(i, nameCol).Value)) = LCase$(Trim$(winUser)) Then
-            GetCurrentUserRole = ws.Cells(i, roleCol).Value
+        If LCase$(Trim$(ws.Cells(i, nameCol).value)) = LCase$(Trim$(winUser)) Then
+            GetCurrentUserRole = ws.Cells(i, roleCol).value
             Exit Function
         End If
     Next i
@@ -101,9 +110,9 @@ End Function
 ' this alone is a real speedup once the DB has any volume of data,
 ' and costs nothing since these are always restored in CloseCentralDB.
 ' ---------------------------------------------------------------------
-Private savedScreenUpdating As Boolean
-Private savedCalculation As XlCalculation
-Private savedEnableEvents As Boolean
+'Private savedScreenUpdating As Boolean
+'Private savedCalculation As XlCalculation
+'Private savedEnableEvents As Boolean
 
 Public Function OpenCentralDB() As Workbook
     Dim attempt As Long
@@ -142,9 +151,9 @@ End Function
 Public Sub CloseCentralDB(wb As Workbook, ByVal saveChanges As Boolean)
     On Error Resume Next
     If saveChanges Then
-        wb.Save
+        wb.save
     End If
-    wb.Close SaveChanges:=False ' already saved above; avoids double prompt
+    wb.Close saveChanges:=False ' already saved above; avoids double prompt
     On Error GoTo 0
     RestoreAppSettings
 End Sub
@@ -164,6 +173,7 @@ End Sub
 ' bounced to read-only themselves. A read-only open takes no such lock.
 ' ---------------------------------------------------------------------
 Public Function OpenCentralDBReadOnly() As Workbook
+
     Dim attempt As Long
     Dim wb As Workbook
 
@@ -192,6 +202,8 @@ Public Function OpenCentralDBReadOnly() As Workbook
 
     Set OpenCentralDBReadOnly = wb
 End Function
+
+
 
 Public Function NextHistoryID(dbWb As Workbook) As Long
     Dim ws As Worksheet, lastRow As Long, idCol As Long
@@ -225,7 +237,7 @@ Public Function FindClaimRow(dbWb As Workbook, ByVal claimID As String) As Long
     End If
 
     target = Trim$(claimID)
-    idArr = ws.Range(ws.Cells(2, idCol), ws.Cells(lastRow, idCol)).Value ' single bulk read
+    idArr = ws.Range(ws.Cells(2, idCol), ws.Cells(lastRow, idCol)).value ' single bulk read
 
     ' A single-row result comes back as a plain value, not an array -
     ' handle that edge case (lastRow = 2) explicitly.
@@ -262,7 +274,7 @@ Public Function GetColIndex(ws As Worksheet, ByVal headerName As String) As Long
     Dim lastCol As Long, i As Long
     lastCol = ws.Cells(1, ws.Columns.Count).End(xlToLeft).Column
     For i = 1 To lastCol
-        If Trim$(LCase$(CStr(ws.Cells(1, i).Value))) = Trim$(LCase$(headerName)) Then
+        If Trim$(LCase$(CStr(ws.Cells(1, i).value))) = Trim$(LCase$(headerName)) Then
             GetColIndex = i
             Exit Function
         End If
@@ -284,7 +296,7 @@ Public Function BuildHeaderMap(ws As Worksheet) As Object
 
     Set map = CreateObject("Scripting.Dictionary")
     lastCol = ws.Cells(1, ws.Columns.Count).End(xlToLeft).Column
-    headerRow = ws.Range(ws.Cells(1, 1), ws.Cells(1, lastCol)).Value ' 1 bulk read
+    headerRow = ws.Range(ws.Cells(1, 1), ws.Cells(1, lastCol)).value ' 1 bulk read
 
     If lastCol = 1 Then
         map(Trim$(LCase$(CStr(headerRow)))) = 1

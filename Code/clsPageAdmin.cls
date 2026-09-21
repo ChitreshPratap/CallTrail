@@ -26,76 +26,77 @@ Option Explicit
 Implements IPage
 
 Private m_ctx As clsAppContext
-Private m_pg As MSForms.Page
+Private m_pg As Msforms.Page
 Private m_arranged As Boolean
 
-Private WithEvents cmdChangeSite As MSForms.CommandButton
+Private WithEvents cmdChangeSite As Msforms.CommandButton
 Attribute cmdChangeSite.VB_VarHelpID = -1
 'Attribute cmdChangeSite.VB_VarHelpID = -1
-Private WithEvents cmdBulkSetup As MSForms.CommandButton
+Private WithEvents cmdBulkSetup As Msforms.CommandButton
 Attribute cmdBulkSetup.VB_VarHelpID = -1
 'Attribute cmdBulkSetup.VB_VarHelpID = -1
-Private WithEvents cmdBulkLoadFile As MSForms.CommandButton
+Private WithEvents cmdBulkLoadFile As Msforms.CommandButton
 Attribute cmdBulkLoadFile.VB_VarHelpID = -1
 'Attribute cmdBulkLoadFile.VB_VarHelpID = -1
-Private WithEvents cmdBulkCheck As MSForms.CommandButton
+Private WithEvents cmdBulkCheck As Msforms.CommandButton
 Attribute cmdBulkCheck.VB_VarHelpID = -1
 'Attribute cmdBulkCheck.VB_VarHelpID = -1
-Private WithEvents cmdBulkProcess As MSForms.CommandButton
+Private WithEvents cmdBulkProcess As Msforms.CommandButton
 Attribute cmdBulkProcess.VB_VarHelpID = -1
 'Attribute cmdBulkProcess.VB_VarHelpID = -1
-Private WithEvents cmdReopen As MSForms.CommandButton
+Private WithEvents cmdReopen As Msforms.CommandButton
 Attribute cmdReopen.VB_VarHelpID = -1
 'Attribute cmdReopen.VB_VarHelpID = -1
-Private WithEvents cmdCheckStatus As MSForms.CommandButton
+Private WithEvents cmdCheckStatus As Msforms.CommandButton
 Attribute cmdCheckStatus.VB_VarHelpID = -1
 'Attribute cmdCheckStatus.VB_VarHelpID = -1
-Private WithEvents cmdDownload As MSForms.CommandButton
+Private WithEvents cmdDownload As Msforms.CommandButton
 Attribute cmdDownload.VB_VarHelpID = -1
 
 
-Private WithEvents cmdArchivePreview As MSForms.CommandButton
+Private WithEvents cmdArchivePreview As Msforms.Label
 Attribute cmdArchivePreview.VB_VarHelpID = -1
 'Attribute cmdArchivePreview.VB_VarHelpID = -1
-Private WithEvents cmdArchiveRun As MSForms.CommandButton
+Private WithEvents cmdArchiveRun As Msforms.Label
 Attribute cmdArchiveRun.VB_VarHelpID = -1
 'Attribute cmdArchiveRun.VB_VarHelpID = -1
-Private WithEvents cboArchiveAge As MSForms.ComboBox
+Private WithEvents cboArchiveAge As Msforms.ComboBox
 Attribute cboArchiveAge.VB_VarHelpID = -1
 'Attribute cboArchiveAge.VB_VarHelpID = -1
-Private WithEvents chkArchiveClosedOnly As MSForms.CheckBox
+Private WithEvents chkArchiveClosedOnly As Msforms.CheckBox
 Attribute chkArchiveClosedOnly.VB_VarHelpID = -1
 'Attribute chkArchiveClosedOnly.VB_VarHelpID = -1
 
-Private WithEvents lstArchiveClaims As MSForms.ListBox
+Private WithEvents lstArchiveClaims As Msforms.ListBox
 Attribute lstArchiveClaims.VB_VarHelpID = -1
 'Attribute lstArchiveClaims.VB_VarHelpID = -1
  
+ Private collectionStyledControls As Collection
 
-Private txtSiteClaimID As MSForms.TextBox
-Private txtNewSite As MSForms.TextBox
-Private txtReopenClaimID As MSForms.TextBox
-Private txtReopenReason As MSForms.TextBox
-Private lblReopenStatus As MSForms.Label
-Private lblArchivePreview As MSForms.Label
-Private lblAdminUser As MSForms.Label
+Private txtSiteClaimID As Msforms.TextBox
+Private txtNewSite As Msforms.TextBox
+Private txtReopenClaimID As Msforms.TextBox
+Private txtReopenReason As Msforms.TextBox
+Private lblReopenStatus As Msforms.Label
+Private lblArchivePreview As Msforms.Label
+Private lblAdminUser As Msforms.Label
 
 Private Const MAX_PREVIEW_ROWS As Long = 5000
-Private lstArchiveHistory As MSForms.ListBox
-Private lblArchiveHistCount As MSForms.Label
+Private lstArchiveHistory As Msforms.ListBox
+Private lblArchiveHistCount As Msforms.Label
 
 ' The claims currently shown in the preview list. Held so a click can
 ' map a list row back to a claim without re-running the filter.
 Private m_previewClaims As Collection
 
 
-Private lblBulkInfo As MSForms.Label
+Private lblBulkInfo As Msforms.Label
 
 Private Property Get IPage_PageTitle() As String
     IPage_PageTitle = "Admin"
 End Property
 
-Private Sub IPage_InitPage(ctx As clsAppContext, pg As MSForms.Page)
+Private Sub IPage_InitPage(ctx As clsAppContext, pg As Msforms.Page)
     Set m_ctx = ctx
     Set m_pg = pg
                                             
@@ -128,32 +129,33 @@ Private Sub IPage_InitPage(ctx As clsAppContext, pg As MSForms.Page)
     ConfigureClaimList lstArchiveClaims
     ConfigureHistoryList lstArchiveHistory
     
-    cboArchiveAge.List = Array("Older than 2 months", "Older than 3 months", _
-                                "Older than 4 months", "Older than 5 months", _
+    cboArchiveAge.List = Array("Older than 5 months", _
                                 "Older than 6 months", "Any age")
                                 
                                 
-    cboArchiveAge.value = "Older than 6 months"
+    cboArchiveAge.value = "Any age"
     chkArchiveClosedOnly.value = True       ' the safe default
     cmdArchiveRun.enabled = False            ' until a preview has been run
 
     Set lblAdminUser = BindOptional(pg, "lblAdmUser")
     Set lblBulkInfo = BindOptional(pg, "lblAdmBulkInfo")
     
+    Set collectionStyledControls = New Collection
+        
 End Sub
 
 Private Sub IPage_OnActivate()
 
-    
+    ArrangeUI
     If Not m_arranged Then
-         arrangeUI
+         ArrangeUI
          m_arranged = True
      End If
 
 
     If Not lblAdminUser Is Nothing Then
         lblAdminUser.caption = "Signed in as: " & m_ctx.userName & _
-                               IIf(m_ctx.isAdmin, " (Admin)", " (User)")
+                               IIf(m_ctx.IsAdmin, " (Admin)", " (User)")
     End If
     
     If Not lblBulkInfo Is Nothing Then
@@ -491,7 +493,7 @@ Private Sub cmdBulkProcess_Click()
 End Sub
 
 
-Private Sub arrangeUI()
+Private Sub ArrangeUI()
     
   'Dim m_pg As UserFormMain
             
@@ -502,93 +504,63 @@ Private Sub arrangeUI()
         .height = m_pg.Parent.height + 1
         .Left = -1
         .Top = -1
-
-        .BackColor = VarnahUtil.getFadeColor(AppUtil.getThemeColor(), 0.9)
+        .BackColor = RGB(255, 255, 255)
+                      
+        .lblHeadingAdmin.Top = 4.5
+        .lblHeadingAdmin.Left = 9
+        .lblHeadingAdmin.foreColor = VarnahUtil.getFadeColor(AppUtil.getThemeColor(), 0.2)
         
-'        .MultiPageDetails.Left = .width - .MultiPageDetails.width
-'        .MultiPageDetails.height = .height
-'        .MultiPageDetails.Top = -2
-'
-'        .frameFilterViewClaims.Left = 0
-'        .frameFilterViewClaims.height = .MultiPageDetails.height
-'        .frameFilterViewClaims.Top = -2
-'        .frameFilterViewClaims.BorderStyle = fmBorderStyleNone
-'        .frameFilterViewClaims.ZOrder 0
-'
-'        .frameViewRecordDetails.width = .MultiPageDetails.width
-'        .frameViewRecordDetails.Left = 0
-'        .frameViewRecordDetails.height = .MultiPageDetails.height
-'        .frameViewRecordDetails.Top = -2
-'        .frameViewRecordDetails.BorderStyle = fmBorderStyleNone
-'        .frameViewRecordDetails.ZOrder 1
-'
-'        .frameViewHistoryDetail.width = .MultiPageDetails.width
-'        .frameViewHistoryDetail.Left = 0
-'        .frameViewHistoryDetail.height = .MultiPageDetails.height
-'        .frameViewHistoryDetail.Top = -2
-'        .frameViewHistoryDetail.BorderStyle = fmBorderStyleNone
-'        .frameViewHistoryDetail.ZOrder 1
-'
-'        .frameViewRecords.Left = 10
-'        .frameViewRecords.width = .width - .MultiPageDetails.width - 2 * .frameViewRecords.Left
-'        .frameViewRecords.Top = 50
-'        .frameViewRecords.height = .height / 2
-'        .frameViewRecords.ZOrder 1
-'
-'
-'        .lstViewClaims.Left = 5
-'        .lstViewClaims.Top = 30
-'        .lstViewClaims.height = .frameViewRecords.height - .lstViewClaims.Top - 10
-'        .lstViewClaims.width = .frameViewRecords.width - 2 * .lstViewClaims.Left
-'        .lstViewClaims.BorderStyle = fmBorderStyleSingle
-'        .lstViewClaims.Font.Name = "Segoe UI"
-'        .lstViewClaims.Font.Size = 10
-'
-'
-'        .frameViewHistory.Left = 10
-'        .frameViewHistory.width = .width - .frameFilterViewClaims.width - 2 * .frameViewHistory.Left
-'        .frameViewHistory.Top = .frameViewRecords.height + .frameViewRecords.Top + 10
-'        .frameViewHistory.height = .height / 3
-'        .frameViewHistory.ZOrder 1
-'
-'        .lstViewHistory.Left = 5
-'        .lstViewHistory.Top = 30
-'        .lstViewHistory.height = .frameViewHistory.height - .lstViewHistory.Top - 10
-'        .lstViewHistory.width = .frameViewHistory.width - 2 * .lstViewHistory.Left
-'        .lstViewHistory.BorderStyle = fmBorderStyleSingle
-'        .lstViewHistory.Font.Name = "Segoe UI"
-'        .lstViewHistory.Font.Size = 10
+        .lblHeadingULineAdmin.Top = .lblHeadingAdmin.Top + .lblHeadingAdmin.height + 2
+        .lblHeadingULineAdmin.Left = 9
+        .lblHeadingULineAdmin.BackColor = VarnahUtil.getFadeColor(AppUtil.getThemeColor(), 0.2)
+        .lblHeadingULineAdmin.width = .width - 2 * .lblHeadingULineAdmin.Left
+        .lblHeadingULineAdmin.height = 2
+        
+        .cboAdmArchiveAge.Left = 25
+                
+        .lblAdmArchivePreview.Left = 25
+        .lblAdmArchivePreview.width = .width - 2 * .lblAdmArchivePreview.Left
         
         
+        .lstAdmArchiveClaims.Left = 25
+        .lstAdmArchiveClaims.Top = .lblAdmArchivePreview.Top + .lblAdmArchivePreview.height + 30
+        .lstAdmArchiveClaims.height = (.height - .lstAdmArchiveClaims.Top) / 2
+        .lstAdmArchiveClaims.width = .width - 2 * .lstAdmArchiveClaims.Left
+        .lstAdmArchiveClaims.BorderStyle = fmBorderStyleSingle
+        .lstAdmArchiveClaims.Font.Name = "Segoe UI"
+        .lstAdmArchiveClaims.Font.Size = 10
         
-'        .lstViewClaims.Left = 10
-'        .lstViewClaims.width = .width - 2 * m_pg.lstViewClaims.Left
-'        '.lstViewClaims.ZOrder = 1
-'
-'        .lstViewHistory.Left = 10
-'        .lstViewHistory.width = .width - 2 * .lstViewHistory.Left
-'        '.ZOrder = 1
-'
-        
+        .lstAdmArchiveHistory.Left = 25
+        .lstAdmArchiveHistory.Top = .lstAdmArchiveClaims.Top + .lstAdmArchiveClaims.height + 30
+        .lstAdmArchiveHistory.height = .height - .lstAdmArchiveHistory.Top - 20
+        .lstAdmArchiveHistory.width = .width - 2 * .lstAdmArchiveHistory.Left
+        .lstAdmArchiveHistory.BorderStyle = fmBorderStyleSingle
+        .lstAdmArchiveHistory.Font.Name = "Segoe UI"
+        .lstAdmArchiveHistory.Font.Size = 10
+                
     End With
  
      'Style Page Add Claim
-     
+    collectionStyledControls.Add Styler.getStyleButton(cmdArchivePreview)
+    collectionStyledControls.Add Styler.getStyleButton(cmdArchiveRun)
+         
+         
 '
 '    collectionStyledControls.Add Styler.getStyledBoxULine(txtSearch, "Claim Id*")
 '    collectionStyledControls.Add Styler.getStyledBoxULine(txtDateFrom, "Date From")
 '    collectionStyledControls.Add Styler.getStyledBoxULine(txtDateTo, "Date To")
 '    'collectionStyledControls.Add Styler.getStyledBoxULine(cboDateField, "Creation Date*")
 '
-'    'Adding headers to listboxClaims
-'    Dim headersClaimList As Variant
-'    Dim headersHistoryList As Variant
-'    headersClaimList = Array("Claim ID", "Claim Site", "Provider Name", "Claim Status", "Attempt", "Creation Date")
-'    headersHistoryList = Array("Caller Name", "Call Date", "Status", "Comment", "Attempt")
+    'Adding headers to listboxClaims
+    Dim headersClaimList As Variant
+    Dim headersHistoryList As Variant
+    headersClaimList = Array("Claim ID", "Claim Site", "Provider Name", "Status", "Attempt", "Creation Date")
+    headersHistoryList = Array("Caller Name", "Call Date", "Status", "Comment")
 '
-'    ' 4. Call the helper function
-'    ListBoxUtil.CreateListBoxHeaders m_pg.framePageViewRecords.lstViewClaims, headersClaimList
-'    ListBoxUtil.CreateListBoxHeaders m_pg.framePageViewRecords.lstViewHistory, headersHistoryList
+    ' 4. Call the helper function
+    ListBoxUtil.generateListBoxHeaders lstArchiveClaims, headersClaimList
+    DoEvents
+    ListBoxUtil.generateListBoxHeaders lstArchiveHistory, headersHistoryList
     
 
  End Sub

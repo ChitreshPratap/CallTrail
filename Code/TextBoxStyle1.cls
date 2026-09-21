@@ -11,11 +11,11 @@ Attribute VB_Exposed = False
 ' Place a underline at the bottom of the textbox
 ' No other configuration is required
 
-Dim var_mukhTextBox As MSForms.TextBox
-Dim var_lblCaption As MSForms.Label
-Dim var_lblLine As MSForms.Label
+Dim var_mukhTextBox As Msforms.TextBox
+Dim var_lblCaption As Msforms.Label
+Dim var_lblLine As Msforms.Label
 
-Public WithEvents txtDynamic As MSForms.TextBox
+Public WithEvents txtDynamic As Msforms.TextBox
 Attribute txtDynamic.VB_VarHelpID = -1
 
 Sub Init(mukhTextBox As control, Optional placeholder As String = "Enter Value")

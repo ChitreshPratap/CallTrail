@@ -12,8 +12,8 @@ Option Explicit
 ' controls across 5 tabs, tells you nothing useful.
 ' =====================================================================
 
-Public Function BindControl(pg As MSForms.Page, ByVal ctrlName As String, _
-                             ByVal pageTitle As String) As MSForms.control
+Public Function BindControl(pg As Msforms.Page, ByVal ctrlName As String, _
+                             ByVal pageTitle As String) As Msforms.control
     On Error GoTo NotFound
     Set BindControl = pg.Controls(ctrlName)
     Exit Function
@@ -26,14 +26,14 @@ End Function
 
 ' Same, but returns Nothing instead of raising when a control is genuinely
 ' optional (e.g. an admin-only note label).
-Public Function BindOptional(pg As MSForms.Page, ByVal ctrlName As String) As MSForms.control
+Public Function BindOptional(pg As Msforms.Page, ByVal ctrlName As String) As Msforms.control
     On Error Resume Next
     Set BindOptional = pg.Controls(ctrlName)
     On Error GoTo 0
 End Function
 
 ' Standard list-box setup so every grid on every tab looks the same.
-Public Sub ConfigureClaimList(lst As MSForms.ListBox)
+Public Sub ConfigureClaimList(lst As Msforms.ListBox)
 
 
     
@@ -48,7 +48,7 @@ Public Sub ConfigureClaimList(lst As MSForms.ListBox)
     
 End Sub
 
-Public Sub ConfigureHistoryList(lst As MSForms.ListBox)
+Public Sub ConfigureHistoryList(lst As Msforms.ListBox)
 
     With lst
         .ColumnCount = 4

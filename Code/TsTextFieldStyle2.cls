@@ -9,12 +9,12 @@ Attribute VB_PredeclaredId = False
 Attribute VB_Exposed = False
 Option Explicit
 
-Dim var_mukhTextBox As MSForms.TextBox
-Dim var_lblCaption As MSForms.Label
-Dim var_lblLine As MSForms.Label
-Public WithEvents txtDynamic As MSForms.TextBox
+Dim var_mukhTextBox As Msforms.TextBox
+Dim var_lblCaption As Msforms.Label
+Dim var_lblLine As Msforms.Label
+Public WithEvents txtDynamic As Msforms.TextBox
 Attribute txtDynamic.VB_VarHelpID = -1
-Dim txtDynamic2 As MSForms.control
+Dim txtDynamic2 As Msforms.control
 Attribute txtDynamic2.VB_VarHelpID = -1
 
 Sub Init(mukhTextBox As control, Optional placeholder As String = "Enter Value")

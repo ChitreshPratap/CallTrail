@@ -76,7 +76,7 @@ Private Sub Frame1_Enter()
     MsgBox "Entered"
 End Sub
 
-Private Sub Frame1_Exit(ByVal Cancel As MSForms.ReturnBoolean)
+Private Sub Frame1_Exit(ByVal Cancel As Msforms.ReturnBoolean)
     MsgBox "Exited"
 End Sub
 
@@ -86,6 +86,10 @@ Private Sub cmdViewClose_Click()
 End Sub
 
 Private Sub frameMain_Click()
+
+End Sub
+
+Private Sub framePageHome_Click()
 
 End Sub
 
@@ -150,37 +154,56 @@ Private Sub lblCloseDashboard_Click()
 
 End Sub
 
-Private Sub gotoPage(pgNumber As Integer)
-    Me.multiPageApp.value = pgNumber
+Private Sub GoToPage(ByVal pageName As String)
+    Dim i As Long
+    On Error Resume Next
+    For i = 0 To multiPageApp.Pages.Count - 1
+        If multiPageApp.Pages(i).Name = pageName Then
+            If multiPageApp.Pages(i).enabled And multiPageApp.Pages(i).Visible Then
+                multiPageApp.value = i
+            End If
+            Exit For
+        End If
+    Next i
+    On Error GoTo 0
 End Sub
 
+'Private Sub GoToPage(pgNumber As Integer)
+'    Me.multiPageApp.value = pgNumber
+'End Sub
+'
 
 Private Sub lblAbout_Click()
     Me.multiPageApp.value = 2
 End Sub
 
 Private Sub lblMenuItemAddClaim_Click()
-    gotoPage 0
+    
+    GoToPage "pageAddRecord"
+    
 End Sub
 Private Sub lblMenuItemViewClaims_Click()
-    gotoPage 1
+    
+    GoToPage "pageViewRecords"
+    
 End Sub
 Private Sub lblMenuItemLogCall_Click()
-    gotoPage 2
+    GoToPage "pageLogCall"
 End Sub
 
 Private Sub lblMenuItemAdmin_Click()
-    gotoPage 3
+    GoToPage "pageAdmin"
 End Sub
 
 Private Sub lblHome_Click()
-
+        
     Me.multiPageApp.value = 0
+    
 End Sub
 
 Private Sub lblMenuItemSearch_Click()
 
-    Me.multiPageApp.value = 4
+    GoToPage "pageSearch"
     
 End Sub
 
@@ -303,7 +326,8 @@ End Sub
 Private Sub RegisterPages()
     
     Set m_pages = New Collection
- 
+    
+    AddPage New ClsPageHome, multiPageApp.Pages("pageHome")
     AddPage New clsPageAddRecord, multiPageApp.Pages("pageAddRecord")
     AddPage New ClsPageViewRecords, multiPageApp.Pages("pageViewRecords")
     AddPage New ClsPageLogCall, multiPageApp.Pages("pageLogCall")
@@ -313,7 +337,7 @@ Private Sub RegisterPages()
     
 End Sub
  
-Private Sub AddPage(ctrl As IPage, pg As MSForms.Page)
+Private Sub AddPage(ctrl As IPage, pg As Msforms.Page)
     
     On Error GoTo Fail
     ctrl.InitPage m_ctx, pg
@@ -328,30 +352,64 @@ Fail:
         "Tab '" & ctrl.pageTitle & "' failed to initialise:" & vbCrLf & Err.Description
 End Sub
  
-' The Admin tab is hidden for non-admins. This is convenience only -
-' every admin action re-checks the role in the data layer, because
-' anyone who can open the VBE could unhide this.
-Private Sub ApplyTabVisibility()
-    
-    On Error Resume Next
-    Me.lblMenuItemAdmin.Visible = m_ctx.isAdmin
-    multiPageApp.Pages("pageAdmin").Visible = m_ctx.isAdmin
-    On Error GoTo 0
+' Tab access rules.
+'
+' UNREGISTERED user -> Home only. Every other tab is disabled, which
+' greys the caption and blocks selection, so the reason is visible
+' rather than the tabs just vanishing.
+'
+' REGISTERED non-admin -> everything except Admin, which is hidden.
+'
+' As always, this is convenience and not security: anyone who can open
+' the VBE can re-enable a tab. The real enforcement is that every write
+' in clsClaimRepository re-checks the role server-side.
 
-End Sub
- 
-Private Function FirstVisiblePageIndex() As Long
-    
+Private Sub ApplyTabVisibility()
     Dim i As Long
+    Dim registered As Boolean
+ 
+    On Error Resume Next
+    registered = m_ctx.IsRegistered
+ 
+    multiPageApp.Pages("pgAdmin").Visible = (registered And m_ctx.IsAdmin)
+ 
     For i = 0 To multiPageApp.Pages.Count - 1
-        If multiPageApp.Pages(i).Visible Then
+        If multiPageApp.Pages(i).Name = "pageHome" Then
+            multiPageApp.Pages(i).enabled = True
+        Else
+            multiPageApp.Pages(i).enabled = registered
+            If Not registered Then
+                ' Say why on the tab itself - a greyed tab with no
+                ' explanation just looks broken.
+                multiPageApp.Pages(i).caption = multiPageApp.Pages(i).caption & " (locked)"
+            End If
+        End If
+    Next i
+    On Error GoTo 0
+End Sub
+
+' Home is the landing page. Falls back to the first usable tab if Home
+' is somehow missing.
+
+Private Function FirstVisiblePageIndex() As Long
+    Dim i As Long
+ 
+    For i = 0 To multiPageApp.Pages.Count - 1
+        If multiPageApp.Pages(i).Name = "pgHome" Then
             FirstVisiblePageIndex = i
             Exit Function
         End If
     Next i
-
-End Function
  
+    For i = 0 To multiPageApp.Pages.Count - 1
+        If multiPageApp.Pages(i).Visible And multiPageApp.Pages(i).enabled Then
+            FirstVisiblePageIndex = i
+            Exit Function
+        End If
+    Next i
+End Function
+  
+  
 ' =====================================================================
 ' Tab switching
 ' =====================================================================
@@ -391,11 +449,24 @@ End Sub
 ' =====================================================================
 Public Sub ShowStatus(ByVal msg As String)
     
+'    On Error Resume Next
+'    lblStatusBar.caption = msg
+'    DoEvents
+'    On Error GoTo 0
+
     On Error Resume Next
+    ' Pages ask the shell to switch tabs by posting a GOTO: message,
+    ' rather than holding a reference to the form and driving it
+    ' directly. Keeps controllers decoupled from the shell.
+    If Left$(msg, 5) = "GOTO:" Then
+        GoToPage "pg" & Mid$(msg, 6)
+        Exit Sub
+    End If
+ 
     lblStatusBar.caption = msg
     DoEvents
     On Error GoTo 0
-
+    
 End Sub
  
 ' =====================================================================
@@ -460,9 +531,14 @@ Private Sub ArrangeShell()
         .Top = 0
         .height = mainWindowHeight
         .ZOrder (1)
-        .BackColor = VarnahUtil.getFadeColor(AppUtil.getThemeColor(), 0.05)
-        .BorderColor = VarnahUtil.getFadeColor(AppUtil.getThemeColor(), 0.05)
+        .BackColor = RGB(237, 237, 237)
+        .BorderColor = vbWhite
         
+    End With
+    
+    With lblAppName
+        .caption = "Menu Item"
+        .foreColor = AppUtil.getThemeColor()
     End With
     
     With frameMain
@@ -473,7 +549,7 @@ Private Sub ArrangeShell()
         .Left = Me.frameDashboard.width
         .Top = 0
         .ZOrder (1)
-        .BackColor = AppUtil.getThemeColor()
+        .BackColor = RGB(237, 237, 237)
         
     End With
             
@@ -481,8 +557,8 @@ Private Sub ArrangeShell()
     lblStatusBar.Left = 9
     lblStatusBar.width = frameMain.width - 2 * lblStatusBar.Left
     lblStatusBar.height = 20
-    lblStatusBar.BackColor = AppUtil.getThemeColor()
-    lblStatusBar.foreColor = vbWhite
+    lblStatusBar.BackColor = RGB(237, 237, 237)
+    lblStatusBar.foreColor = AppUtil.getThemeColor()
     
     With lblHome
         .BackColor = VarnahUtil.getFadeColor(AppUtil.getThemeColor(), -0.4)
@@ -523,8 +599,8 @@ Private Sub ArrangeShell()
         .Left = 10
         .Top = 5
         .height = 50
-        .BackColor = AppUtil.getThemeColor()
-        .foreColor = vbWhite
+        .BackColor = RGB(237, 237, 237)
+        .foreColor = AppUtil.getThemeColor()
         .caption = AppUtil.getAppName()
     End With
     
@@ -548,12 +624,17 @@ Private Sub ArrangeShell()
             
     collection_navigationButton.Add Styler.getStyledButtonNavigationBar(lblHome)
     collection_navigationButton.Add Styler.getStyledButtonNavigationBar(lblMenuItemAddClaim)
-    collection_navigationButton.Add Styler.getStyledButtonNavigationBar(lblAbout)
+'    collection_navigationButton.Add Styler.getStyledButtonNavigationBar(lblAbout)
     collection_navigationButton.Add Styler.getStyledButtonNavigationBar(lblMenuItemViewClaims)
     collection_navigationButton.Add Styler.getStyledButtonNavigationBar(lblMenuItemLogCall)
     collection_navigationButton.Add Styler.getStyledButtonNavigationBar(lblMenuItemAdmin)
     collection_navigationButton.Add Styler.getStyledButtonNavigationBar(lblMenuItemSearch)
-    
+           
+    lblUserProfile.Left = frameMain.width - lblUserProfile.width
+    lblUserProfile.Top = 0
+    lblUserProfile.foreColor = AppUtil.getThemeColor()
+    lblUserProfile.caption = "    " & m_ctx.userName & IIf(m_ctx.IsAdmin, "  (Admin)", " (User)")
+       
         
 End Sub
  

@@ -321,11 +321,11 @@ Private Sub txtSearch_Change()
 End Sub
 
 ' Enter key in either date box applies the filter
-Private Sub txtDateFrom_KeyDown(ByVal KeyCode As MSForms.ReturnInteger, ByVal Shift As Integer)
+Private Sub txtDateFrom_KeyDown(ByVal KeyCode As Msforms.ReturnInteger, ByVal Shift As Integer)
     If KeyCode = vbKeyReturn Then ApplyFilters
 End Sub
 
-Private Sub txtDateTo_KeyDown(ByVal KeyCode As MSForms.ReturnInteger, ByVal Shift As Integer)
+Private Sub txtDateTo_KeyDown(ByVal KeyCode As Msforms.ReturnInteger, ByVal Shift As Integer)
     If KeyCode = vbKeyReturn Then ApplyFilters
 End Sub
 
@@ -337,9 +337,9 @@ Private Sub cboDateField_Change()
     ApplyFilters
 End Sub
 
-Private Sub CreateListBoxHeaders(lst As MSForms.ListBox, headerNames As Variant)
+Private Sub CreateListBoxHeaders(lst As Msforms.ListBox, headerNames As Variant)
     Dim i As Integer
-    Dim lbl As MSForms.Label
+    Dim lbl As Msforms.Label
     Dim currentLeft As Single
     Dim colWidths() As String
     Dim singleWidth As Single

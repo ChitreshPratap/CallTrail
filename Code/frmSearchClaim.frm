@@ -70,7 +70,7 @@ Private Sub cmdSearch_Click()
 End Sub
 
 ' Enter key in the search box searches
-Private Sub txtSearchID_KeyDown(ByVal KeyCode As MSForms.ReturnInteger, ByVal Shift As Integer)
+Private Sub txtSearchID_KeyDown(ByVal KeyCode As Msforms.ReturnInteger, ByVal Shift As Integer)
     If KeyCode = vbKeyReturn Then DoSearch
 End Sub
 
@@ -150,17 +150,17 @@ End Sub
 ' value but can't type in it, which is clearer than hiding it entirely.
 Private Sub ApplyPermissions()
     Dim wb As Workbook
-    Dim isAdmin As Boolean
+    Dim IsAdmin As Boolean
 
     On Error Resume Next
     Set wb = OpenCentralDB()
-    isAdmin = IsCurrentUserAdmin(wb)
+    IsAdmin = IsCurrentUserAdmin(wb)
     CloseCentralDB wb, False
     On Error GoTo 0
 
-    txtUpdatedSite.enabled = isAdmin
-    txtUpdatedSite.BackColor = IIf(isAdmin, &H80000005, &H8000000F)  ' white / grey
-    lblAdminNote.Visible = Not isAdmin
+    txtUpdatedSite.enabled = IsAdmin
+    txtUpdatedSite.BackColor = IIf(IsAdmin, &H80000005, &H8000000F)  ' white / grey
+    lblAdminNote.Visible = Not IsAdmin
 End Sub
 
 Private Sub LoadHistory(ByVal claimID As String)

@@ -28,72 +28,72 @@ Option Explicit
 Implements IPage
 
 Private m_ctx As clsAppContext
-Private m_pg As MSForms.Page
+Private m_pg As Msforms.Page
 Private m_claim As clsClaim
 Private m_dirty As Boolean
 Private m_loading As Boolean
 Private m_arranged As Boolean
 
 'Private WithEvents cmdSearch As MSForms.CommandButton
-Private WithEvents cmdSearch As MSForms.Label
+Private WithEvents cmdSearch As Msforms.Label
 Attribute cmdSearch.VB_VarHelpID = -1
 'Attribute cmdSearch.VB_VarHelpID = -1
 'Private WithEvents cmdSave As MSForms.CommandButton
-Private WithEvents cmdSave As MSForms.Label
+Private WithEvents cmdSave As Msforms.Label
 Attribute cmdSave.VB_VarHelpID = -1
 'Attribute cmdSave.VB_VarHelpID = -1
 'Private WithEvents cmdRevert As MSForms.CommandButton
-Private WithEvents cmdRevert As MSForms.Label
+Private WithEvents cmdRevert As Msforms.Label
 Attribute cmdRevert.VB_VarHelpID = -1
 'Attribute cmdRevert.VB_VarHelpID = -1
 'Private WithEvents cmdSrcReset As MSForms.CommandButton
-Private WithEvents cmdSrcReset As MSForms.Label
+Private WithEvents cmdSrcReset As Msforms.Label
 Attribute cmdSrcReset.VB_VarHelpID = -1
 'Attribute cmdRevert.VB_VarHelpID = -1
 
-Private WithEvents txtSearchID As MSForms.TextBox
+Private WithEvents txtSearchID As Msforms.TextBox
 Attribute txtSearchID.VB_VarHelpID = -1
 'Attribute txtSearchID.VB_VarHelpID = -1
-Private WithEvents txtSite As MSForms.TextBox
+Private WithEvents txtSite As Msforms.TextBox
 Attribute txtSite.VB_VarHelpID = -1
 'Attribute txtSite.VB_VarHelpID = -1
-Private WithEvents txtProvider As MSForms.TextBox
+Private WithEvents txtProvider As Msforms.TextBox
 Attribute txtProvider.VB_VarHelpID = -1
 'Attribute txtProvider.VB_VarHelpID = -1
-Private WithEvents datePickerCreatedOn As MSForms.Label
+Private WithEvents datePickerCreatedOn As Msforms.Label
 Attribute datePickerCreatedOn.VB_VarHelpID = -1
 
-Private WithEvents txtQuery As MSForms.TextBox
+Private WithEvents txtQuery As Msforms.TextBox
 Attribute txtQuery.VB_VarHelpID = -1
 'Attribute txtQuery.VB_VarHelpID = -1
-Private WithEvents txtCreationDate As MSForms.TextBox
+Private WithEvents txtCreationDate As Msforms.TextBox
 Attribute txtCreationDate.VB_VarHelpID = -1
 'Attribute txtCreationDate.VB_VarHelpID = -1
-Private WithEvents txtUpdatedSite As MSForms.TextBox
+Private WithEvents txtUpdatedSite As Msforms.TextBox
 Attribute txtUpdatedSite.VB_VarHelpID = -1
 'Attribute txtUpdatedSite.VB_VarHelpID = -1
 
 
-Private lstHistory As MSForms.ListBox
-Private lblClaimID As MSForms.Label
-Private lblSiteInitial As MSForms.Label
-Private lblSiteUpdated As MSForms.Label
-Private lblStatus As MSForms.Label
-Private lblCreatedOn As MSForms.Label
+Private lstHistory As Msforms.ListBox
+Private lblClaimID As Msforms.Label
+Private lblSiteInitial As Msforms.Label
+Private lblSiteUpdated As Msforms.Label
+Private lblStatus As Msforms.Label
+Private lblCreatedOn As Msforms.Label
 
 
-Private lblAttempt As MSForms.Label
-Private lblInsertedOn As MSForms.Label
-Private lblInsertedBy As MSForms.Label
-Private lblLastUpdated As MSForms.Label
-Private lblLastUpdatedBy As MSForms.Label
-Private lblClosedOn As MSForms.Label
-Private lblDaysOpen As MSForms.Label
-Private lblHistoryCount As MSForms.Label
-Private lblAdminNote As MSForms.Label
+Private lblAttempt As Msforms.Label
+Private lblInsertedOn As Msforms.Label
+Private lblInsertedBy As Msforms.Label
+Private lblLastUpdated As Msforms.Label
+Private lblLastUpdatedBy As Msforms.Label
+Private lblClosedOn As Msforms.Label
+Private lblDaysOpen As Msforms.Label
+Private lblHistoryCount As Msforms.Label
+Private lblAdminNote As Msforms.Label
 
-Private lblProviderName As MSForms.Label
-Private lblClaimQuery As MSForms.Label
+Private lblProviderName As Msforms.Label
+Private lblClaimQuery As Msforms.Label
 
 Private collectionStyledControls As Collection
 
@@ -101,7 +101,7 @@ Private Property Get IPage_PageTitle() As String
     IPage_PageTitle = "Search & Edit"
 End Property
 
-Private Sub IPage_InitPage(ctx As clsAppContext, pg As MSForms.Page)
+Private Sub IPage_InitPage(ctx As clsAppContext, pg As Msforms.Page)
     
     Set m_ctx = ctx
     Set m_pg = pg
@@ -152,7 +152,7 @@ Private Sub IPage_InitPage(ctx As clsAppContext, pg As MSForms.Page)
 End Sub
 
 
-Public Sub ConfigureHistoryList(lst As MSForms.ListBox)
+Public Sub ConfigureHistoryList(lst As Msforms.ListBox)
 
     With lstHistory
         .ColumnCount = 4
@@ -168,11 +168,9 @@ End Sub
 Private Sub IPage_OnActivate()
 
     m_ctx.SetStatus "Search a Claim ID to view and correct its details."
-    
-    arrangeUI
-    
+       
     If Not m_arranged Then
-         arrangeUI
+         ArrangeUI
          m_arranged = True
      End If
     
@@ -181,7 +179,7 @@ End Sub
 ' ---------------------------------------------------------------------
 ' Search
 ' ---------------------------------------------------------------------
-Private Sub txtSearchID_KeyDown(ByVal KeyCode As MSForms.ReturnInteger, ByVal Shift As Integer)
+Private Sub txtSearchID_KeyDown(ByVal KeyCode As Msforms.ReturnInteger, ByVal Shift As Integer)
     If KeyCode = vbKeyReturn Then DoSearch
 End Sub
 
@@ -270,11 +268,11 @@ End Sub
 ' than hiding the field and leaving them wondering where it went.
 Private Sub ApplyPermissions()
     
-    Dim isAdmin As Boolean
-    isAdmin = m_ctx.isAdmin          ' cached in the context, not re-checked
-    txtUpdatedSite.enabled = isAdmin
-    txtUpdatedSite.BackColor = IIf(isAdmin, &H80000005, &H8000000F)
-    If Not lblAdminNote Is Nothing Then lblAdminNote.Visible = Not isAdmin
+    Dim IsAdmin As Boolean
+    IsAdmin = m_ctx.IsAdmin          ' cached in the context, not re-checked
+    txtUpdatedSite.enabled = IsAdmin
+    txtUpdatedSite.BackColor = IIf(IsAdmin, &H80000005, &H8000000F)
+    If Not lblAdminNote Is Nothing Then lblAdminNote.Visible = Not IsAdmin
 
 End Sub
 
@@ -457,7 +455,7 @@ Private Sub SetEditingEnabled(ByVal enabled As Boolean)
     
 End Sub
 
-Private Sub FailField(ByVal msg As String, ctrl As MSForms.control)
+Private Sub FailField(ByVal msg As String, ctrl As Msforms.control)
     
     MsgBox msg, vbExclamation, "Check Details"
     On Error Resume Next
@@ -467,7 +465,7 @@ Private Sub FailField(ByVal msg As String, ctrl As MSForms.control)
 End Sub
 
 
-Private Sub arrangeUI()
+Private Sub ArrangeUI()
     
     'Dim m_pg As UserFormMain
     Dim endingMark As Double
@@ -485,7 +483,9 @@ Private Sub arrangeUI()
         
         .width = m_pg.Parent.width + 1
         .height = m_pg.Parent.height + 1
-        .BackColor = VarnahUtil.getFadeColor(AppUtil.getThemeColor(), 0.9)
+'        .BackColor = VarnahUtil.getFadeColor(AppUtil.getThemeColor(), 0.96)
+        Styler.stylePageFrame m_pg.framePageSearchEdit
+        
         .Left = -1
         .Top = -1
                         
@@ -493,11 +493,17 @@ Private Sub arrangeUI()
         .frameSrcDetails.Top = -1
         .frameSrcDetails.Left = .width - .frameSrcDetails.width
         .frameSrcDetails.height = .height
+        .frameSrcDetails.BackColor = VarnahUtil.getFadeColor(AppUtil.getThemeColor(), 0.96)
                                 
         .lblHeadingSearchFind.Top = 4.5
         .lblHeadingSearchFind.Left = 9
+'        .lblHeadingSearchFind.foreColor = VarnahUtil.getFadeColor(AppUtil.getThemeColor(), 0.02)
+        Styler.getStyledHeading .lblHeadingSearchFind
+        
         .lblHeadingULineSearchEdit.Top = .lblHeadingSearchFind.Top + .lblHeadingSearchFind.height + 2
         .lblHeadingULineSearchEdit.Left = 9
+        '.lblHeadingULineSearchEdit = VarnahUtil.getFadeColor(AppUtil.getThemeColor(), 0.02)
+        Styler.getStyledHeadingULine .lblHeadingULineSearchEdit
         .lblHeadingULineSearchEdit.width = .frameSrcDetails.Left - 2 * .lblHeadingSearchFind.Left
         .lblHeadingULineSearchEdit.height = 2
         
@@ -514,6 +520,10 @@ Private Sub arrangeUI()
         .lstSrchHistory.Left = leftMargin + 5
         .lstSrchHistory.width = .frameSrcDetails.Left - 2 * .lstSrchHistory.Left + 10
         .lstSrchHistory.height = .height - .lstSrchHistory.Top - 30
+        
+        .lstSrchHistory.BorderStyle = fmBorderStyleSingle
+        .lstSrchHistory.Font.Name = "Segoe UI"
+        .lstSrchHistory.Font.Size = 10
         
         
         editingWidthK = .cmdSrchFind.Left - 2 * leftMargin - widgetSpace
@@ -533,73 +543,6 @@ Private Sub arrangeUI()
         .txtSrchCreationDate.width = editingWidthK / 3
         .lblSearchDatePickerCreatedOn.Left = .txtSrchCreationDate.Left + .txtSrchCreationDate.width - .lblSearchDatePickerCreatedOn.width + 4.8
         
-        
-        '.BackColor = vbYellow
-        
-'        .MultiPageDetails.Left = .width - .MultiPageDetails.width
-'        .MultiPageDetails.height = .height
-'        .MultiPageDetails.Top = -2
-'
-'        .frameFilterViewClaims.Left = 0
-'        .frameFilterViewClaims.height = .MultiPageDetails.height
-'        .frameFilterViewClaims.Top = -2
-'        .frameFilterViewClaims.BorderStyle = fmBorderStyleNone
-'        .frameFilterViewClaims.ZOrder 0
-'
-'        .frameViewRecordDetails.width = .MultiPageDetails.width
-'        .frameViewRecordDetails.Left = 0
-'        .frameViewRecordDetails.height = .MultiPageDetails.height
-'        .frameViewRecordDetails.Top = -2
-'        .frameViewRecordDetails.BorderStyle = fmBorderStyleNone
-'        .frameViewRecordDetails.ZOrder 1
-'
-'        .frameViewHistoryDetail.width = .MultiPageDetails.width
-'        .frameViewHistoryDetail.Left = 0
-'        .frameViewHistoryDetail.height = .MultiPageDetails.height
-'        .frameViewHistoryDetail.Top = -2
-'        .frameViewHistoryDetail.BorderStyle = fmBorderStyleNone
-'        .frameViewHistoryDetail.ZOrder 1
-'
-'        .frameViewRecords.Left = 10
-'        .frameViewRecords.width = .width - .MultiPageDetails.width - 2 * .frameViewRecords.Left
-'        .frameViewRecords.Top = 50
-'        .frameViewRecords.height = .height / 2
-'        .frameViewRecords.ZOrder 1
-'
-'
-'        .lstViewClaims.Left = 5
-'        .lstViewClaims.Top = 30
-'        .lstViewClaims.height = .frameViewRecords.height - .lstViewClaims.Top - 10
-'        .lstViewClaims.width = .frameViewRecords.width - 2 * .lstViewClaims.Left
-'        .lstViewClaims.BorderStyle = fmBorderStyleSingle
-'        .lstViewClaims.Font.Name = "Segoe UI"
-'        .lstViewClaims.Font.Size = 10
-'
-'
-'        .frameViewHistory.Left = 10
-'        .frameViewHistory.width = .width - .frameFilterViewClaims.width - 2 * .frameViewHistory.Left
-'        .frameViewHistory.Top = .frameViewRecords.height + .frameViewRecords.Top + 10
-'        .frameViewHistory.height = .height / 3
-'        .frameViewHistory.ZOrder 1
-'
-'        .lstViewHistory.Left = 5
-'        .lstViewHistory.Top = 30
-'        .lstViewHistory.height = .frameViewHistory.height - .lstViewHistory.Top - 10
-'        .lstViewHistory.width = .frameViewHistory.width - 2 * .lstViewHistory.Left
-'        .lstViewHistory.BorderStyle = fmBorderStyleSingle
-'        .lstViewHistory.Font.Name = "Segoe UI"
-'        .lstViewHistory.Font.Size = 10
-'
-'
-'
-'        .lstViewClaims.Left = 10
-'        .lstViewClaims.width = .width - 2 * m_pg.lstViewClaims.Left
-'        '.lstViewClaims.ZOrder = 1
-'
-'        .lstViewHistory.Left = 10
-'        .lstViewHistory.width = .width - 2 * .lstViewHistory.Left
-'        '.ZOrder = 1
-'
         
     End With
  
@@ -626,7 +569,7 @@ Private Sub arrangeUI()
     'Call the helper function
     'ListBoxUtil.CreateListBoxHeaders m_pg.framePageViewRecords.lstViewClaims, headersClaimList
     'ListBoxUtil.CreateListBoxHeaders lstHistory, headersHistoryList
-    ListBoxUtil.generateListBoxHeaders lstHistory, headersHistoryList, RGB(17, 49, 97), RGB(17, 69, 143)
+    ListBoxUtil.generateListBoxHeaders lstHistory, headersHistoryList
     
     
 

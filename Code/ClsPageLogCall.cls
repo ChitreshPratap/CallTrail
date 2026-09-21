@@ -23,29 +23,29 @@ Option Explicit
 Implements IPage
 
 Private m_ctx As clsAppContext
-Private m_pg As MSForms.Page
+Private m_pg As Msforms.Page
 Private m_claim As clsClaim
 Private m_arranged As Boolean
 
 'Private WithEvents cmdFind As MSForms.CommandButton
-Private WithEvents cmdFind As MSForms.Label
+Private WithEvents cmdFind As Msforms.Label
 Attribute cmdFind.VB_VarHelpID = -1
 'Attribute cmdFind.VB_VarHelpID = -1
 'Private WithEvents cmdLog As MSForms.CommandButton
-Private WithEvents cmdLog As MSForms.Label
+Private WithEvents cmdLog As Msforms.Label
 Attribute cmdLog.VB_VarHelpID = -1
 'Attribute cmdLog.VB_VarHelpID = -1
-Private WithEvents txtClaimID As MSForms.TextBox
+Private WithEvents txtClaimID As Msforms.TextBox
 Attribute txtClaimID.VB_VarHelpID = -1
 'Attribute txtClaimID.VB_VarHelpID = -1
 
-Private cboStatus As MSForms.ComboBox
-Private txtComment As MSForms.TextBox
-Private lstHistory As MSForms.ListBox
-Private lblClaimInfo As MSForms.Label
-Private lblCurrentStatus As MSForms.Label
-Private lblAttempt As MSForms.Label
-Private lblLastComment As MSForms.Label
+Private cboStatus As Msforms.ComboBox
+Private txtComment As Msforms.TextBox
+Private lstHistory As Msforms.ListBox
+Private lblClaimInfo As Msforms.Label
+Private lblCurrentStatus As Msforms.Label
+Private lblAttempt As Msforms.Label
+Private lblLastComment As Msforms.Label
 
 Private collectionStyledControls As Collection
 
@@ -53,7 +53,7 @@ Private Property Get IPage_PageTitle() As String
     IPage_PageTitle = "Log Call"
 End Property
 
-Private Sub IPage_InitPage(ctx As clsAppContext, pg As MSForms.Page)
+Private Sub IPage_InitPage(ctx As clsAppContext, pg As Msforms.Page)
     
     Set m_ctx = ctx
     Set m_pg = pg
@@ -82,15 +82,15 @@ End Sub
 Private Sub IPage_OnActivate()
     
     m_ctx.SetStatus "Find a claim, then log the outcome of your call."
-    
+'    ArrangeUI
     If Not m_arranged Then
-         arrangeUI
+         ArrangeUI
          m_arranged = True
      End If
     
 End Sub
 
-Public Sub ConfigureHistoryList(lst As MSForms.ListBox)
+Public Sub ConfigureHistoryList(lst As Msforms.ListBox)
 
     With lst
         .ColumnCount = 4
@@ -101,7 +101,7 @@ Public Sub ConfigureHistoryList(lst As MSForms.ListBox)
 End Sub
 
 
-Private Sub txtClaimID_KeyDown(ByVal KeyCode As MSForms.ReturnInteger, ByVal Shift As Integer)
+Private Sub txtClaimID_KeyDown(ByVal KeyCode As Msforms.ReturnInteger, ByVal Shift As Integer)
     If KeyCode = vbKeyReturn Then FindClaim
 End Sub
 
@@ -217,7 +217,7 @@ Private Sub ClearClaim()
 End Sub
 
 
-Private Sub arrangeUI()
+Private Sub ArrangeUI()
     
     Dim btnControlLeftK As Double
     Dim endingMark As Double
@@ -237,21 +237,26 @@ Private Sub arrangeUI()
         .height = m_pg.Parent.height + 1
         .Left = -1
         .Top = -1
-        .BackColor = VarnahUtil.getFadeColor(AppUtil.getThemeColor(), 0.9)
+        '.BackColor = VarnahUtil.getFadeColor(AppUtil.getThemeColor(), 0.9)
+        Styler.stylePageFrame m_pg.framePageLogCall
         
         'Style Frame
             
         .frameLogCallHistoryDetail.Top = -1
         .frameLogCallHistoryDetail.Left = .width - .frameLogCallHistoryDetail.width
         .frameLogCallHistoryDetail.height = .height
+        .frameLogCallHistoryDetail.BackColor = VarnahUtil.getFadeColor(AppUtil.getThemeColor(), 0.96)
         
         .lblHeadingLogCall.Top = 4.5
         .lblHeadingLogCall.Left = 9
+        Styler.getStyledHeading .lblHeadingLogCall
         
         .lblHeadingULineLogCall.Top = .lblHeadingLogCall.Top + .lblHeadingLogCall.height + 2
         .lblHeadingULineLogCall.Left = 9
         .lblHeadingULineLogCall.width = .frameLogCallHistoryDetail.Left - 2 * .lblHeadingULineLogCall.Left
         .lblHeadingULineLogCall.height = 2
+        Styler.getStyledHeadingULine .lblHeadingULineLogCall
+        
         
         btnControlLeftK = .lblHeadingULineLogCall.Left + .lblHeadingULineLogCall.width
         .cmdLogFind.Left = btnControlLeftK - .cmdLogFind.width - 10
@@ -264,7 +269,9 @@ Private Sub arrangeUI()
         .lstLogHistory.Left = leftMargin
         .lstLogHistory.width = .frameLogCallHistoryDetail.Left - 2 * .lstLogHistory.Left + 10
         .lstLogHistory.height = .height - .lstLogHistory.Top - 30
-        
+        .lstLogHistory.BorderStyle = fmBorderStyleSingle
+        .lstLogHistory.Font.Name = "Segoe UI"
+        .lstLogHistory.Font.Size = 10
         
         editingWidthK = .cmdLogFind.Left - 2 * leftMargin - widgetSpace
         .txtLogClaimID.Left = leftMargin
@@ -284,7 +291,7 @@ Private Sub arrangeUI()
     'Adding headers to listboxClaims
     Dim headersHistoryList As Variant
     headersHistoryList = Array("Caller Name", "Call Date", "Status", "Comment")
-    ListBoxUtil.generateListBoxHeaders lstHistory, headersHistoryList, RGB(17, 49, 97), RGB(17, 69, 143)
+    ListBoxUtil.generateListBoxHeaders lstHistory, headersHistoryList
     
 
  End Sub

@@ -84,13 +84,13 @@ End Sub
 
 Public Sub ShowAdminSiteForm()
     Dim wb As Workbook
-    Dim isAdmin As Boolean
+    Dim IsAdmin As Boolean
 
     Set wb = OpenCentralDB()
-    isAdmin = IsCurrentUserAdmin(wb)
+    IsAdmin = IsCurrentUserAdmin(wb)
     CloseCentralDB wb, False
 
-    If Not isAdmin Then
+    If Not IsAdmin Then
         MsgBox "This feature is restricted to Admin users.", vbExclamation, "Access Denied"
         Exit Sub
     End If

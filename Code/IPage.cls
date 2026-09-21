@@ -25,7 +25,7 @@ Option Explicit
 '   PageTitle  - used for the tab caption and error messages.
 ' =====================================================================
  
-Public Sub InitPage(ctx As clsAppContext, pg As MSForms.Page)
+Public Sub InitPage(ctx As clsAppContext, pg As Msforms.Page)
 
 End Sub
  

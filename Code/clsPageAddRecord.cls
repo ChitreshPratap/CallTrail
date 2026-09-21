@@ -20,26 +20,26 @@ Option Explicit
 Implements IPage
  
 Private m_ctx As clsAppContext
-Private m_pg As MSForms.Page
+Private m_pg As Msforms.Page
 Private m_arranged As Boolean
 
-Private WithEvents cmdSave As MSForms.Label
+Private WithEvents cmdSave As Msforms.Label
 Attribute cmdSave.VB_VarHelpID = -1
 'Attribute cmdSave.VB_VarHelpID = -1
-Private WithEvents cmdClear As MSForms.Label
+Private WithEvents cmdClear As Msforms.Label
 Attribute cmdClear.VB_VarHelpID = -1
 'Attribute cmdClear.VB_VarHelpID = -1
-Private WithEvents cmdCancel As MSForms.Label
+Private WithEvents cmdCancel As Msforms.Label
 Attribute cmdCancel.VB_VarHelpID = -1
-Private WithEvents datePickerCreatedOn As MSForms.Label
+Private WithEvents datePickerCreatedOn As Msforms.Label
 Attribute datePickerCreatedOn.VB_VarHelpID = -1
 
-Private txtClaimID As MSForms.TextBox
-Private txtClaimSite As MSForms.TextBox
-Private txtProviderName As MSForms.TextBox
-Private txtQuery As MSForms.TextBox
-Private txtCreationDate As MSForms.TextBox
-Private lblInfo As MSForms.Label
+Private txtClaimID As Msforms.TextBox
+Private txtClaimSite As Msforms.TextBox
+Private txtProviderName As Msforms.TextBox
+Private txtQuery As Msforms.TextBox
+Private txtCreationDate As Msforms.TextBox
+Private lblInfo As Msforms.Label
 
 
 Private collectionStyledControls As Collection
@@ -47,8 +47,12 @@ Private collectionStyledControls As Collection
 Private Property Get IPage_PageTitle() As String
     IPage_PageTitle = "Add Claim"
 End Property
+
+
+
  
-Private Sub IPage_InitPage(ctx As clsAppContext, pg As MSForms.Page)
+ 
+Private Sub IPage_InitPage(ctx As clsAppContext, pg As Msforms.Page)
     
     Set m_ctx = ctx
     Set m_pg = pg
@@ -75,11 +79,15 @@ Private Sub IPage_OnActivate()
     ' Arranged once, on first visit. Doing it here rather than in
     ' InitPage means tabs the user never opens are never laid out - a
     ' small saving, and it keeps startup snappy.
+'    ArrangeUI
    If Not m_arranged Then
-        arrangeUI
+        ArrangeUI
         m_arranged = True
     End If
+    If Trim$(txtClaimSite.value) = "" Then txtClaimSite.value = m_ctx.DefaultLocation
+    
     m_ctx.SetStatus "Add a new claim. All five fields are required."
+         
     If Not lblInfo Is Nothing Then
         lblInfo.caption = "Status starts as Pending and Attempt at 0. " & _
                           "Insertion date and your username are recorded automatically."
@@ -183,14 +191,14 @@ Private Sub ClearFields()
 
 End Sub
  
-Private Sub Fail(ByVal msg As String, ctrl As MSForms.control)
+Private Sub Fail(ByVal msg As String, ctrl As Msforms.control)
     MsgBox msg, vbExclamation, "Check Details"
     On Error Resume Next
     ctrl.SetFocus
     On Error GoTo 0
 End Sub
  
-Private Sub arrangeUI()
+Private Sub ArrangeUI()
  
             
     'Dim m_pg As UserFormMain
@@ -199,7 +207,9 @@ Private Sub arrangeUI()
         
         .width = m_pg.Parent.width + 1
         .height = m_pg.Parent.height + 1
-        .BackColor = VarnahUtil.getFadeColor(AppUtil.getThemeColor(), 0.9)
+        '.BackColor = VarnahUtil.getFadeColor(AppUtil.getThemeColor(), 0.9)
+        Styler.stylePageFrame m_pg.framePageAddRecord
+        
 '        .BackColor = vbYellow
         .Left = -1
         .Top = -1
@@ -207,8 +217,10 @@ Private Sub arrangeUI()
         
         .lblHeadingAddClaim.Top = 4.5
         .lblHeadingAddClaim.Left = 9
+        Styler.getStyledHeading .lblHeadingAddClaim
         .lblHeadingULineAddClaim.Top = .lblHeadingAddClaim.Top + .lblHeadingAddClaim.height + 2
         .lblHeadingULineAddClaim.Left = 9
+        Styler.getStyledHeadingULine .lblHeadingULineAddClaim
         .lblHeadingULineAddClaim.width = .width - 2 * .lblHeadingAddClaim.Left
         .lblHeadingULineAddClaim.height = 2
         
@@ -294,7 +306,7 @@ End Sub
  
 
 ' Enter in the ID box moves to the next field
-Private Sub txtClaimID_KeyDown(ByVal KeyCode As MSForms.ReturnInteger, ByVal Shift As Integer)
+Private Sub txtClaimID_KeyDown(ByVal KeyCode As Msforms.ReturnInteger, ByVal Shift As Integer)
     If KeyCode = vbKeyReturn Then txtClaimSite.SetFocus
 End Sub
 

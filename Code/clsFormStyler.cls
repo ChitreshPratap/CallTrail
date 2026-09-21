@@ -148,7 +148,7 @@ End Property
 ' nothing.
 ' ---------------------------------------------------------------------
 Public Sub Calibrate()
-    Dim lbl As MSForms.Label
+    Dim lbl As Msforms.Label
     Dim tempName As String
     Dim ratio As Single
 
@@ -249,7 +249,7 @@ End Sub
 ' A bold section heading spanning the label+field block.
 ' ---------------------------------------------------------------------
 Public Sub Header(ByVal labelName As String, Optional ByVal caption As String = "")
-    Dim lbl As MSForms.Label
+    Dim lbl As Msforms.Label
     Set lbl = Resolve(labelName, False)
 
     With lbl
@@ -279,7 +279,7 @@ Public Sub Row(ByVal captionName As String, ByVal fieldName As String, _
                 Optional ByVal fieldWidth As Single = 0, _
                 Optional ByVal fieldHeight As Single = 0, _
                 Optional ByVal readOnlyLook As Boolean = False)
-    Dim fld As MSForms.control
+    Dim fld As Msforms.control
     Dim w As Single, h As Single
 
     Set fld = Resolve(fieldName, False)
@@ -308,7 +308,7 @@ Public Sub ValueRow(ByVal captionName As String, ByVal valueLabelName As String,
                      Optional ByVal caption As String = "", _
                      Optional ByVal fieldWidth As Single = 0, _
                      Optional ByVal fieldHeight As Single = 0)
-    Dim lbl As MSForms.Label
+    Dim lbl As Msforms.Label
     Dim w As Single, h As Single
 
     Set lbl = Resolve(valueLabelName, False)
@@ -336,7 +336,7 @@ End Sub
 ' typically a ListBox.
 ' ---------------------------------------------------------------------
 Public Sub FullWidth(ByVal ctrlName As String, ByVal width As Single, ByVal height As Single)
-    Dim ctl As MSForms.control
+    Dim ctl As Msforms.control
     Dim w As Single, h As Single
     Set ctl = Resolve(ctrlName, False)
     w = S(width): h = S(height)
@@ -357,7 +357,7 @@ End Sub
 ' ---------------------------------------------------------------------
 Public Sub Note(ByVal labelName As String, Optional ByVal caption As String = "", _
                  Optional ByVal height As Single = 0, Optional ByVal width As Single = 0)
-    Dim lbl As MSForms.Label
+    Dim lbl As Msforms.Label
     Dim h As Single, w As Single
 
     Set lbl = Resolve(labelName, True)
@@ -396,7 +396,7 @@ End Sub
 
 Public Sub Button(ByVal ctrlName As String, Optional ByVal caption As String = "", _
                    Optional ByVal width As Single = 80, Optional ByVal gapAfter As Single = 6)
-    Dim btn As MSForms.CommandButton
+    Dim btn As Msforms.CommandButton
     Set btn = Resolve(ctrlName, False)
 
     If Not m_inButtonRow Then BeginButtonRow
@@ -424,7 +424,7 @@ End Sub
 ' hand but still want to match the app's look.
 ' ---------------------------------------------------------------------
 Public Sub StyleOnly(ByVal ctrlName As String, Optional ByVal readOnlyLook As Boolean = False)
-    Dim ctl As MSForms.control
+    Dim ctl As Msforms.control
     Set ctl = Resolve(ctrlName, True)
     If ctl Is Nothing Then Exit Sub
     StyleField ctl, False, readOnlyLook
@@ -472,7 +472,7 @@ Public Sub Fill(ByVal ctrlName As String, _
                  Optional ByVal margin As Single = 6, _
                  Optional ByVal reserveBottom As Single = 30, _
                  Optional ByVal reserveTop As Single = 0)
-    Dim ctl As MSForms.control
+    Dim ctl As Msforms.control
     Set ctl = Resolve(ctrlName, False)
 
     With ctl
@@ -489,7 +489,7 @@ End Sub
 Public Sub AnchorBottomLeft(ByVal ctrlName As String, ByVal width As Single, _
                              Optional ByVal height As Single = 0, _
                              Optional ByVal margin As Single = 8)
-    Dim ctl As MSForms.control
+    Dim ctl As Msforms.control
     Dim h As Single
 
     Set ctl = Resolve(ctrlName, False)
@@ -509,7 +509,7 @@ End Sub
 Public Sub AnchorBottomRight(ByVal ctrlName As String, ByVal width As Single, _
                               Optional ByVal height As Single = 0, _
                               Optional ByVal margin As Single = 8)
-    Dim ctl As MSForms.control
+    Dim ctl As Msforms.control
     Dim h As Single
 
     Set ctl = Resolve(ctrlName, False)
@@ -528,7 +528,7 @@ End Sub
 ' content competing with the tab the user is actually looking at.
 ' ---------------------------------------------------------------------
 Public Sub StyleStatusBar(ByVal ctrlName As String)
-    Dim lbl As MSForms.Label
+    Dim lbl As Msforms.Label
     Set lbl = Resolve(ctrlName, True)
     If lbl Is Nothing Then Exit Sub
 
@@ -547,7 +547,7 @@ End Sub
 ' ---------------------------------------------------------------------
 Public Sub StyleMultiPage(ByVal ctrlName As String, _
                            Optional ByVal tabFixedWidth As Single = 0)
-    Dim mp As MSForms.MultiPage
+    Dim mp As Msforms.MultiPage
     Set mp = Resolve(ctrlName, False)
 
     On Error Resume Next
@@ -571,7 +571,7 @@ End Sub
 Public Sub TitleBar(ByVal ctrlName As String, ByVal caption As String, _
                      Optional ByVal height As Single = 22, _
                      Optional ByVal margin As Single = 6)
-    Dim lbl As MSForms.Label
+    Dim lbl As Msforms.Label
     Set lbl = Resolve(ctrlName, True)
     If lbl Is Nothing Then Exit Sub
 
@@ -638,7 +638,7 @@ End Function
 ' Positions the caption label to the left of the field, if there is one.
 Private Sub PlaceCaption(ByVal captionName As String, ByVal caption As String, _
                           ByVal rowH As Single)
-    Dim lbl As MSForms.Label
+    Dim lbl As Msforms.Label
     If captionName = "" Then Exit Sub
 
     Set lbl = Resolve(captionName, True)
@@ -660,14 +660,14 @@ End Sub
 ' Applies type-appropriate styling. TypeOf checks rather than a single
 ' blanket style, because setting .BorderStyle on a CommandButton or
 ' .MultiLine on a ComboBox raises an error.
-Private Sub StyleField(ctl As MSForms.control, ByVal isMultiline As Boolean, _
+Private Sub StyleField(ctl As Msforms.control, ByVal isMultiline As Boolean, _
                         ByVal readOnlyLook As Boolean)
     On Error Resume Next
 
     ctl.Font.Name = FontName
     ctl.Font.Size = FontSize
 
-    If TypeOf ctl Is MSForms.TextBox Then
+    If TypeOf ctl Is Msforms.TextBox Then
         With ctl
             .BorderStyle = fmBorderStyleSingle
             .BackColor = IIf(readOnlyLook, ReadOnlyBackColor, EditableBackColor)
@@ -679,16 +679,16 @@ Private Sub StyleField(ctl As MSForms.control, ByVal isMultiline As Boolean, _
             End If
         End With
 
-    ElseIf TypeOf ctl Is MSForms.ComboBox Then
+    ElseIf TypeOf ctl Is Msforms.ComboBox Then
         With ctl
             .BackColor = IIf(readOnlyLook, ReadOnlyBackColor, EditableBackColor)
             .Style = fmStyleDropDownList    ' stops typed junk getting in
         End With
 
-    ElseIf TypeOf ctl Is MSForms.ListBox Then
+    ElseIf TypeOf ctl Is Msforms.ListBox Then
         ctl.BorderStyle = fmBorderStyleSingle
 
-    ElseIf TypeOf ctl Is MSForms.Label Then
+    ElseIf TypeOf ctl Is Msforms.Label Then
         ctl.foreColor = &H80000012          ' window text
     End If
 
