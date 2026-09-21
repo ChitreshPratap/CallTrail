@@ -1,0 +1,285 @@
+' =====================================================================
+' frmMain - code-behind for the tabbed shell
+'
+' Paste ALL of this into the code module of a UserForm named frmMain.
+' See Setup Guide section 7 for the control layout.
+'
+' This module is deliberately THIN. It owns the MultiPage, the status
+' bar and the page registry - nothing else. All actual behaviour lives
+' in the clsPage* controllers, which is what makes adding a sixth tab a
+' matter of writing one class and adding one line to RegisterPages.
+' =====================================================================
+Option Explicit
+
+Private m_ctx As clsAppContext
+Private m_pages As Collection        ' IPage controllers, in tab order
+Private m_initialised As Boolean
+
+' --- Shell layout tunables. Change these to resize the whole app. ---
+Private Const FORM_WIDTH As Single = 780
+Private Const FORM_HEIGHT As Single = 560
+Private Const OUTER_MARGIN As Single = 8
+Private Const TITLE_HEIGHT As Single = 22
+Private Const FOOTER_HEIGHT As Single = 30
+Private Const TAB_WIDTH As Single = 96      ' 0 = auto-width tabs
+
+' =====================================================================
+' Startup
+' =====================================================================
+Private Sub UserForm_Initialize()
+    On Error GoTo Fail
+
+    Set m_ctx = New clsAppContext
+    m_ctx.SetStatusSink Me
+
+    ' Shell FIRST, so the MultiPage is at its final size before any page
+    ' arranges itself inside it. Pages that size controls against the
+    ' page width would otherwise lay out against the designer's size.
+    ' ArrangeShell also calibrates the UI scale and stores it on the
+    ' context for the tabs to reuse.
+    ArrangeShell
+
+    RegisterPages
+    ApplyTabVisibility
+
+    m_initialised = True
+
+    ' Activate the first visible tab so it populates immediately
+    MultiPage1.Value = FirstVisiblePageIndex()
+    ActivateCurrentPage
+
+    Exit Sub
+
+Fail:
+    MsgBox "The application could not start:" & vbCrLf & vbCrLf & Err.Description, _
+           vbCritical, "Startup Error"
+End Sub
+
+' =====================================================================
+' THE SHELL DESIGN - size of the window and where the three top-level
+' controls sit. Everything else lives inside a tab and is arranged by
+' that tab's own controller.
+' =====================================================================
+Private Sub ArrangeShell()
+    Dim ui As New clsFormStyler
+
+    ui.Init Me, "Main Form"
+    ui.FontName = "Segoe UI"
+    ui.FontSize = 9
+
+    ' Measure how this machine actually renders the font, and scale the
+    ' layout to match. Corrects for a missing font being substituted with
+    ' one of different width - the usual reason a form that looks right
+    ' here looks wrong on someone else's PC.
+    ui.Calibrate
+    m_ctx.UIScale = ui.ScaleFactor      ' every tab reuses this
+
+    ui.SizeForm Me, FORM_WIDTH, FORM_HEIGHT, "CallTrail"
+
+    ' Optional banner across the top. Add a Label named lblTitle to show
+    ' it; leave it out and this is skipped silently.
+    ui.TitleBar "lblTitle", "CallTrail - Claim Calling Tracker", TITLE_HEIGHT, OUTER_MARGIN
+
+    ' MultiPage fills what's left between the title and the footer
+    ui.Fill "MultiPage1", OUTER_MARGIN, FOOTER_HEIGHT, TitleReserve()
+    ui.StyleMultiPage "MultiPage1", TAB_WIDTH
+
+    ' Footer: status bar bottom-left, Close bottom-right
+    ui.AnchorBottomLeft "lblStatusBar", FORM_WIDTH - 140, , OUTER_MARGIN
+    ui.StyleStatusBar "lblStatusBar"
+    ui.AnchorBottomRight "cmdClose", 80, , OUTER_MARGIN
+End Sub
+
+' Only reserve title space if a title label actually exists
+Private Function TitleReserve() As Single
+    Dim ctl As MSForms.Control
+    On Error Resume Next
+    Set ctl = Me.Controls("lblTitle")
+    On Error GoTo 0
+    If ctl Is Nothing Then
+        TitleReserve = 0
+    Else
+        TitleReserve = TITLE_HEIGHT + 4
+    End If
+End Function
+
+' ---------------------------------------------------------------------
+' The page registry. To add a tab:
+'   1. Add a Page to MultiPage1 in the designer, with its controls
+'   2. Write a clsPageXxx class that Implements IPage
+'   3. Add ONE AddPage line here, in the same order as the tabs
+' Nothing else in the app changes.
+' ---------------------------------------------------------------------
+Private Sub RegisterPages()
+    Set m_pages = New Collection
+
+    AddPage New clsPageHome, MultiPage1.Pages("pgHome")
+    AddPage New clsPageLogCall, MultiPage1.Pages("pgLogCall")
+    AddPage New clsPageSearch, MultiPage1.Pages("pgSearch")
+    AddPage New clsPageView, MultiPage1.Pages("pgView")
+    AddPage New clsPageAddClaim, MultiPage1.Pages("pgAdd")
+    AddPage New clsPageAdmin, MultiPage1.Pages("pgAdmin")
+End Sub
+
+Private Sub AddPage(ctrl As IPage, pg As MSForms.Page)
+    On Error GoTo Fail
+    ctrl.InitPage m_ctx, pg
+    pg.Caption = ctrl.PageTitle
+    m_pages.Add ctrl
+    Exit Sub
+
+Fail:
+    ' Name the failing tab rather than letting a generic control error
+    ' bubble up from a form with 150 controls on it.
+    Err.Raise Err.Number, "AddPage", _
+        "Tab '" & ctrl.PageTitle & "' failed to initialise:" & vbCrLf & Err.Description
+End Sub
+
+' Tab access rules.
+'
+' UNREGISTERED user -> Home only. Every other tab is disabled, which
+' greys the caption and blocks selection, so the reason is visible
+' rather than the tabs just vanishing.
+'
+' REGISTERED non-admin -> everything except Admin, which is hidden.
+'
+' As always, this is convenience and not security: anyone who can open
+' the VBE can re-enable a tab. The real enforcement is that every write
+' in clsClaimRepository re-checks the role server-side.
+Private Sub ApplyTabVisibility()
+    Dim i As Long
+    Dim registered As Boolean
+
+    On Error Resume Next
+    registered = m_ctx.IsRegistered
+
+    MultiPage1.Pages("pgAdmin").Visible = (registered And m_ctx.IsAdmin)
+
+    For i = 0 To MultiPage1.Pages.Count - 1
+        If MultiPage1.Pages(i).Name = "pgHome" Then
+            MultiPage1.Pages(i).Enabled = True
+        Else
+            MultiPage1.Pages(i).Enabled = registered
+            If Not registered Then
+                ' Say why on the tab itself - a greyed tab with no
+                ' explanation just looks broken.
+                MultiPage1.Pages(i).Caption = MultiPage1.Pages(i).Caption & " (locked)"
+            End If
+        End If
+    Next i
+    On Error GoTo 0
+End Sub
+
+' Home is the landing page. Falls back to the first usable tab if Home
+' is somehow missing.
+Private Function FirstVisiblePageIndex() As Long
+    Dim i As Long
+
+    For i = 0 To MultiPage1.Pages.Count - 1
+        If MultiPage1.Pages(i).Name = "pgHome" Then
+            FirstVisiblePageIndex = i
+            Exit Function
+        End If
+    Next i
+
+    For i = 0 To MultiPage1.Pages.Count - 1
+        If MultiPage1.Pages(i).Visible And MultiPage1.Pages(i).Enabled Then
+            FirstVisiblePageIndex = i
+            Exit Function
+        End If
+    Next i
+End Function
+
+' =====================================================================
+' Tab switching
+' =====================================================================
+Private Sub MultiPage1_Change()
+    If Not m_initialised Then Exit Sub
+    ActivateCurrentPage
+End Sub
+
+' Each controller refreshes itself here, on the tab the user actually
+' opened. Nothing reloads speculatively - and because the claim cache is
+' shared in clsAppContext, switching tabs doesn't re-read the shared file
+' unless something invalidated it.
+Private Sub ActivateCurrentPage()
+    Dim idx As Long
+    Dim ctrl As IPage
+
+    idx = MultiPage1.Value
+    If idx < 0 Then Exit Sub
+    If idx + 1 > m_pages.Count Then Exit Sub
+
+    On Error GoTo Fail
+    Set ctrl = m_pages(idx + 1)      ' MultiPage 0-based, Collection 1-based
+    ctrl.OnActivate
+    Exit Sub
+
+Fail:
+    ShowStatus "Could not load this tab: " & Err.Description
+End Sub
+
+' =====================================================================
+' Status bar - clsAppContext calls this through its status sink, so
+' controllers post messages without knowing a form exists.
+' =====================================================================
+Public Sub ShowStatus(ByVal msg As String)
+    On Error Resume Next
+
+    ' Pages ask the shell to switch tabs by posting a GOTO: message,
+    ' rather than holding a reference to the form and driving it
+    ' directly. Keeps controllers decoupled from the shell.
+    If Left$(msg, 5) = "GOTO:" Then
+        GoToPage "pg" & Mid$(msg, 6)
+        Exit Sub
+    End If
+
+    lblStatusBar.Caption = msg
+    DoEvents
+    On Error GoTo 0
+End Sub
+
+Private Sub GoToPage(ByVal pageName As String)
+    Dim i As Long
+    On Error Resume Next
+    For i = 0 To MultiPage1.Pages.Count - 1
+        If MultiPage1.Pages(i).Name = pageName Then
+            If MultiPage1.Pages(i).Enabled And MultiPage1.Pages(i).Visible Then
+                MultiPage1.Value = i
+            End If
+            Exit For
+        End If
+    Next i
+    On Error GoTo 0
+End Sub
+
+' =====================================================================
+' Closing
+' =====================================================================
+Private Sub cmdClose_Click()
+    Unload Me
+End Sub
+
+Private Sub UserForm_QueryClose(Cancel As Integer, CloseMode As Integer)
+    Dim ctrl As IPage
+    Dim srch As clsPageSearch
+
+    ' The Search tab is the only one holding unsaved edits, so ask before
+    ' throwing them away.
+    On Error Resume Next
+    For Each ctrl In m_pages
+        If TypeOf ctrl Is clsPageSearch Then
+            Set srch = ctrl
+            If Not srch.ConfirmDiscardIfDirty() Then
+                Cancel = True
+                Exit Sub
+            End If
+        End If
+    Next ctrl
+    On Error GoTo 0
+End Sub
+
+Private Sub UserForm_Terminate()
+    Set m_pages = Nothing
+    Set m_ctx = Nothing
+End Sub

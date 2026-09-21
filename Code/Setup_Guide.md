@@ -33,7 +33,7 @@ This split is deliberate: if the data file ever got macros in it, every user ope
    - `modPageHelpers.bas`
    - `modDownload.bas`
    - `modRepair.bas` (one-off repair tool — see section 7f)
-   - For the tabbed shell (section 7): `IPage.cls`, `clsAppContext.cls`, `clsFormStyler.cls`, `clsArchiveService.cls`, `clsPageLogCall.cls`, `clsPageSearch.cls`, `clsPageView.cls`, `clsPageAddClaim.cls`, `clsPageAdmin.cls`
+   - For the tabbed shell (section 7): `IPage.cls`, `clsAppContext.cls`, `clsFormStyler.cls`, `clsArchiveService.cls`, `clsPageHome.cls`, `clsPageLogCall.cls`, `clsPageSearch.cls`, `clsPageView.cls`, `clsPageAddClaim.cls`, `clsPageAdmin.cls`
    - **Optional, object-oriented layer** (see section 2a below): `clsClaim.cls`, `clsHistoryEntry.cls`, `clsClaimRepository.cls`
 
    Note: `modBulkImport.bas` uses `clsClaimRepository`, so import the three `.cls` files even if you otherwise stick to the procedural layer.
@@ -313,13 +313,71 @@ Set `WordWrap = True` on `lblLastComment`.
 - After a successful save the claim is **re-read from the database** rather than trusting the form's copy, so the audit fields on screen show what was really written.
 - A non-admin who edits Updated Site doesn't get their whole save rejected — that one field is skipped and the status bar says so, and their other corrections still go through.
 
+## 5b. Home page, registration and guest lockdown
+
+`clsPageHome.cls` is the landing tab. It shows who's signed in, whether they're registered, and what the app does.
+
+### Registration model
+
+On startup the app looks up the Windows username in the `Users` sheet.
+
+| Found? | Role | Access |
+|---|---|---|
+| Yes, `Role = Admin` | Admin | Everything including the Admin tab |
+| Yes, any other role | User | Everything except Admin |
+| **No** | **Guest** | **Home only — every other tab greyed and labelled "(locked)"** |
+
+The Home tab names the user explicitly: *"User 'jdoe' is not registered in the database."* That matters on shared machines and with multiple domain accounts — "you are not registered" leaves people guessing which account the app actually saw.
+
+**This changes previous behaviour.** `GetCurrentUserRole` used to default an unknown user to `"User"`, meaning anyone who opened the file could add and edit claims. Unknown users are now Guests.
+
+A **Re-check Registration** button clears the cached lookup so someone just added to the `Users` sheet can confirm it without restarting Excel. Unlocking the tabs still needs a restart — tab state is applied once at startup, and rebuilding it live would mean re-running arrangement for pages that may already hold unsaved input.
+
+**Locking is convenience, not security.** Anyone who can open the VBE can re-enable a tab. The real enforcement is that every write re-checks the role server-side.
+
+### Add Claim site autopopulation
+
+`ClaimSite` pre-fills from the signed-in user's `DefaultLocation` in the `Users` sheet, and **stays editable**. A caller can legitimately enter a claim for another site; locking the field would push a routine action to an admin.
+
+If `DefaultLocation` is blank or the column is missing, the field is simply empty — nothing breaks.
+
+### Controls on `pgHome`
+
+| Name | Type |
+|---|---|
+| `lblHomeWelcome` | Label (header) |
+| `lblCapHomeUser`, `lblCapHomeRole`, `lblCapHomeReg` | Labels (captions) |
+| `lblHomeUserName`, `lblHomeRole`, `lblHomeRegStatus` | Labels (values) |
+| `lblHomeGuestNotice` | Label |
+| `lblHomeFeaturesHeader` | Label (header) |
+| `lblHomeFeature1` … `lblHomeFeature6` | Labels |
+| `imgHomeBanner` | **Image** — set its Picture in the designer |
+| `cmdHomeStart`, `cmdHomeRefreshUser` | CommandButtons (optional) |
+
+`pgHome` must be the **first** page on the MultiPage, and registered first in `RegisterPages`.
+
+### The banner image
+
+`imgHomeBanner` shows a static picture — set its `Picture` property in the designer.
+
+**If you were expecting an animated GIF here, it won't work.** MSForms `Image` controls render only the first frame of a GIF and stop; there is no property that changes this. It's a limitation of the control, not a setting you're missing. The two workarounds, if you ever want motion:
+
+- **Frame swapping** on an `Application.OnTime` tick. Reliable, but UserForms have no timer control and `OnTime` won't tick below about a second, so it only suits deliberate, slow effects.
+- **A WebBrowser control**, which genuinely animates GIFs but runs on the deprecated Internet Explorer engine — often absent, policy-blocked, or needing a per-machine registry key on current builds.
+
+A static image avoids both problems and renders identically everywhere.
+
+### Cross-tab navigation
+
+The Home tab's **Start Calling** button switches to the Log Call tab by posting `GOTO:LogCall` through the status channel, which the shell interprets. Controllers stay decoupled from the shell rather than holding a reference to the form and driving it directly.
+
 ## 7. frmMain — the tabbed application shell
 
 This is the recommended way to run CallTrail. One window, five tabs, shared data cache.
 
 ### Build it
 
-1. Import the new class modules: `IPage.cls`, `clsAppContext.cls`, `clsPageLogCall.cls`, `clsPageSearch.cls`, `clsPageView.cls`, `clsPageAddClaim.cls`, `clsPageAdmin.cls`, and `modPageHelpers.bas`.
+1. Import the new class modules: `IPage.cls`, `clsAppContext.cls`, `clsPageHome.cls`, `clsPageLogCall.cls`, `clsPageSearch.cls`, `clsPageView.cls`, `clsPageAddClaim.cls`, `clsPageAdmin.cls`, and `modPageHelpers.bas`.
 2. Insert a UserForm named **frmMain**. Paste in `frmMain_code.txt`.
 3. Add these three controls directly on the form (not inside the MultiPage):
 

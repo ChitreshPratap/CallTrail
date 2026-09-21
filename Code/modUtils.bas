@@ -1,11 +1,6 @@
 Attribute VB_Name = "modUtils"
 Option Explicit
 
-Private savedScreenUpdating As Boolean
-Private savedCalculation As XlCalculation
-Private savedEnableEvents As Boolean
-
-
 ' =====================================================================
 ' modUtils
 ' Generic helpers used across the app. Keep this file free of any
@@ -20,6 +15,58 @@ End Function
 
 ' Looks up the caller's friendly name/role from the Users sheet in the
 ' central DB. dbWb must already be open.
+' ---------------------------------------------------------------------
+' Looks up the logged-in Windows user in the Users sheet.
+'
+' Returns True if they are registered. Role and defaultLocation come
+' back ByRef. An UNREGISTERED user is not an error - they get Guest
+' role and a locked-down app, which the home page explains.
+'
+' Note this replaces the old "default to User if not found" behaviour.
+' Defaulting an unknown person to a working role meant anyone who opened
+' the file could add and edit claims.
+' ---------------------------------------------------------------------
+Public Function GetUserRecord(dbWb As Workbook, ByRef role As String, _
+                               ByRef defaultLocation As String) As Boolean
+    Dim ws As Worksheet, lastRow As Long, i As Long
+    Dim nameCol As Long, roleCol As Long, locCol As Long
+    Dim winUser As String
+    Dim data As Variant
+
+    role = "Guest"
+    defaultLocation = ""
+    winUser = LCase$(Trim$(GetWindowsUserName()))
+
+    On Error GoTo NotFound
+    Set ws = dbWb.Sheets(SHEET_USERS)
+    nameCol = GetColIndex(ws, "UserName")
+    roleCol = GetColIndex(ws, "Role")
+
+    ' DefaultLocation is optional - an older Users sheet may not have it
+    locCol = 0
+    On Error Resume Next
+    locCol = GetColIndex(ws, "DefaultLocation")
+    On Error GoTo NotFound
+
+    lastRow = ws.Cells(ws.Rows.Count, nameCol).End(xlUp).Row
+    If lastRow < 2 Then GoTo NotFound
+
+    data = ws.Range(ws.Cells(2, 1), ws.Cells(lastRow, ws.Cells(1, ws.Columns.Count).End(xlToLeft).Column)).Value
+
+    For i = 1 To UBound(data, 1)
+        If LCase$(Trim$(CStr(data(i, nameCol) & ""))) = winUser Then
+            role = Trim$(CStr(data(i, roleCol) & ""))
+            If role = "" Then role = "User"
+            If locCol > 0 Then defaultLocation = Trim$(CStr(data(i, locCol) & ""))
+            GetUserRecord = True
+            Exit Function
+        End If
+    Next i
+
+NotFound:
+    GetUserRecord = False
+End Function
+
 Public Function GetCurrentUserRole(dbWb As Workbook) As String
     Dim ws As Worksheet, lastRow As Long, i As Long
     Dim winUser As String, nameCol As Long, roleCol As Long
@@ -31,8 +78,8 @@ Public Function GetCurrentUserRole(dbWb As Workbook) As String
     lastRow = ws.Cells(ws.Rows.Count, nameCol).End(xlUp).Row
 
     For i = 2 To lastRow
-        If LCase$(Trim$(ws.Cells(i, nameCol).value)) = LCase$(Trim$(winUser)) Then
-            GetCurrentUserRole = ws.Cells(i, roleCol).value
+        If LCase$(Trim$(ws.Cells(i, nameCol).Value)) = LCase$(Trim$(winUser)) Then
+            GetCurrentUserRole = ws.Cells(i, roleCol).Value
             Exit Function
         End If
     Next i
@@ -54,9 +101,9 @@ End Function
 ' this alone is a real speedup once the DB has any volume of data,
 ' and costs nothing since these are always restored in CloseCentralDB.
 ' ---------------------------------------------------------------------
-'Private savedScreenUpdating As Boolean
-'Private savedCalculation As XlCalculation
-'Private savedEnableEvents As Boolean
+Private savedScreenUpdating As Boolean
+Private savedCalculation As XlCalculation
+Private savedEnableEvents As Boolean
 
 Public Function OpenCentralDB() As Workbook
     Dim attempt As Long
@@ -95,9 +142,9 @@ End Function
 Public Sub CloseCentralDB(wb As Workbook, ByVal saveChanges As Boolean)
     On Error Resume Next
     If saveChanges Then
-        wb.save
+        wb.Save
     End If
-    wb.Close saveChanges:=False ' already saved above; avoids double prompt
+    wb.Close SaveChanges:=False ' already saved above; avoids double prompt
     On Error GoTo 0
     RestoreAppSettings
 End Sub
@@ -117,7 +164,6 @@ End Sub
 ' bounced to read-only themselves. A read-only open takes no such lock.
 ' ---------------------------------------------------------------------
 Public Function OpenCentralDBReadOnly() As Workbook
-
     Dim attempt As Long
     Dim wb As Workbook
 
@@ -146,8 +192,6 @@ Public Function OpenCentralDBReadOnly() As Workbook
 
     Set OpenCentralDBReadOnly = wb
 End Function
-
-
 
 Public Function NextHistoryID(dbWb As Workbook) As Long
     Dim ws As Worksheet, lastRow As Long, idCol As Long
@@ -181,7 +225,7 @@ Public Function FindClaimRow(dbWb As Workbook, ByVal claimID As String) As Long
     End If
 
     target = Trim$(claimID)
-    idArr = ws.Range(ws.Cells(2, idCol), ws.Cells(lastRow, idCol)).value ' single bulk read
+    idArr = ws.Range(ws.Cells(2, idCol), ws.Cells(lastRow, idCol)).Value ' single bulk read
 
     ' A single-row result comes back as a plain value, not an array -
     ' handle that edge case (lastRow = 2) explicitly.
@@ -218,7 +262,7 @@ Public Function GetColIndex(ws As Worksheet, ByVal headerName As String) As Long
     Dim lastCol As Long, i As Long
     lastCol = ws.Cells(1, ws.Columns.Count).End(xlToLeft).Column
     For i = 1 To lastCol
-        If Trim$(LCase$(CStr(ws.Cells(1, i).value))) = Trim$(LCase$(headerName)) Then
+        If Trim$(LCase$(CStr(ws.Cells(1, i).Value))) = Trim$(LCase$(headerName)) Then
             GetColIndex = i
             Exit Function
         End If
@@ -240,7 +284,7 @@ Public Function BuildHeaderMap(ws As Worksheet) As Object
 
     Set map = CreateObject("Scripting.Dictionary")
     lastCol = ws.Cells(1, ws.Columns.Count).End(xlToLeft).Column
-    headerRow = ws.Range(ws.Cells(1, 1), ws.Cells(1, lastCol)).value ' 1 bulk read
+    headerRow = ws.Range(ws.Cells(1, 1), ws.Cells(1, lastCol)).Value ' 1 bulk read
 
     If lastCol = 1 Then
         map(Trim$(LCase$(CStr(headerRow)))) = 1
