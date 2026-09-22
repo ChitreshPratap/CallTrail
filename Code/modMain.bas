@@ -9,13 +9,13 @@ Option Explicit
 ' modDataAccess or modUtils.
 ' =====================================================================
 
+' =====================================================================
 ' PRIMARY ENTRY POINT - the tabbed application shell.
 ' Wire your main button to this.
 ' =====================================================================
 Public Sub ShowApp()
-    UserFormMain.Show
+    frmMain.Show
 End Sub
-
 
 ' ---------------------------------------------------------------------
 ' The individual entry points below still work and are kept deliberately:
@@ -24,78 +24,27 @@ End Sub
 ' whole shell. The tabbed app does not depend on them.
 ' ---------------------------------------------------------------------
 
-'Public Sub ShowAddClaimForm()
-'    frmAddClaim.Show
-'End Sub
-
-' Search ONE claim: full detail, read-only call history, and editable
-' detail fields for corrections
-Public Sub ShowSearchClaim()
-    frmSearchClaim.Show
-End Sub
-
-
-
-'Show the form to add claim manually
 Public Sub ShowAddClaimForm()
-    
-    'frmAddClaim.Show
-    UserFormMain.Show
-    
+    frmAddClaim.Show
 End Sub
-
-Public Sub ShowAddClaimForm_tab(tabNumber As Integer)
-    
-    'frmAddClaim.Show
-    Dim uForm As UserFormMain
-    Set uForm = New UserFormMain
-    uForm.setPage tabNumber
-    uForm.Show
-    Unload uForm
-    Set uForm = Nothing
-    
-End Sub
-
 
 Public Sub ShowUpdateClaimForm()
     frmUpdateClaim.Show
 End Sub
 
-'' Search ONE claim: full detail, read-only call history, and editable
-'' detail fields for corrections
-'Public Sub ShowSearchClaim()
-'
-'    frmSearchClaim.Show
-'
-'End Sub
-
-' Admin-only one-off: strip blank rows left by an older archive build.
-Public Sub RepairBlankRows()
-    RemoveBlankRows
-End Sub
-
-' --- Download a snapshot of the database into this workbook ---
-
-Public Sub DownloadDatabase()
-
-    DownloadAllData
-    
-End Sub
-
 Public Sub ShowAdminSiteForm()
     Dim wb As Workbook
-    Dim IsAdmin As Boolean
+    Dim isAdmin As Boolean
 
     Set wb = OpenCentralDB()
-    IsAdmin = IsCurrentUserAdmin(wb)
+    isAdmin = IsCurrentUserAdmin(wb)
     CloseCentralDB wb, False
 
-    If Not IsAdmin Then
+    If Not isAdmin Then
         MsgBox "This feature is restricted to Admin users.", vbExclamation, "Access Denied"
         Exit Sub
     End If
-    'frmAdminSite.Show
-    frmAdminLocation.Show
+    frmAdminSite.Show
 End Sub
 
 Public Sub ShowClaimHistoryViewer()
@@ -104,14 +53,42 @@ End Sub
 
 ' Browse/filter all claims with full detail + call history
 Public Sub ShowViewClaims()
-    Frmviewclaims.Show
+    frmViewClaims.Show
 End Sub
 
+' Search ONE claim: full detail, read-only call history, and editable
+' detail fields for corrections
+Public Sub ShowSearchClaim()
+    frmSearchClaim.Show
+End Sub
+
+' Admin-only one-off: strip blank rows left by an older archive build.
+Public Sub RepairBlankRows()
+    RemoveBlankRows
+End Sub
+
+' --- Database password (see modSecurity) ---
+
+' Admin, one-off at setup and on each password rotation.
+Public Sub ProtectDatabase()
+    SetDatabasePassword
+End Sub
+
+' Anyone: "can my copy of the app still open the database?"
+Public Sub CheckDatabaseAccess()
+    VerifyDatabaseAccess
+End Sub
+
+' --- Download a snapshot of the database into this workbook ---
+
+Public Sub DownloadDatabase()
+    DownloadAllData
+End Sub
 
 ' Admin-only: reopen a closed claim from a prompt, without the tabbed
 ' shell. Kept for anyone wiring single-purpose buttons.
 Public Sub ReopenClaimPrompt()
-    Dim repo As New ClsClaimRepository
+    Dim repo As New clsClaimRepository
     Dim claimID As String, reason As String
     Dim c As clsClaim
 
@@ -137,26 +114,25 @@ Public Sub ReopenClaimPrompt()
     End If
 End Sub
 
-
 ' --- Bulk claim entry via the bulkClaimAdd sheet (see modBulkImport) ---
 
 ' Creates/clears the bulkClaimAdd sheet
 Public Sub BulkSheetSetup()
-    modBulkImport.SetupBulkSheet
+    SetupBulkSheet
 End Sub
 
 ' Optional: load a CSV/xlsx of claims into bulkClaimAdd
 Public Sub BulkLoadFromFile()
-    modBulkImport.LoadClaimsFromFile
+    LoadClaimsFromFile
 End Sub
 
 ' Dry run - flags problems, changes nothing
 Public Sub BulkCheck()
-    modBulkImport.CheckBulkClaims
+    CheckBulkClaims
 End Sub
 
 ' MAIN action: validate, import valid rows (deleting them from the
 ' sheet), leave invalid rows behind with their error text
 Public Sub BulkAddClaims()
-    modBulkImport.ProcessBulkClaims
+    ProcessBulkClaims
 End Sub

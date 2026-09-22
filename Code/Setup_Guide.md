@@ -32,6 +32,7 @@ This split is deliberate: if the data file ever got macros in it, every user ope
    - `modClaimFilter.bas`
    - `modPageHelpers.bas`
    - `modDownload.bas`
+   - `modSecurity.bas` (database password — see section 7g)
    - `modRepair.bas` (one-off repair tool — see section 7f)
    - For the tabbed shell (section 7): `IPage.cls`, `clsAppContext.cls`, `clsFormStyler.cls`, `clsArchiveService.cls`, `clsPageHome.cls`, `clsPageLogCall.cls`, `clsPageSearch.cls`, `clsPageView.cls`, `clsPageAddClaim.cls`, `clsPageAdmin.cls`
    - **Optional, object-oriented layer** (see section 2a below): `clsClaim.cls`, `clsHistoryEntry.cls`, `clsClaimRepository.cls`
@@ -936,6 +937,54 @@ Then reload the app.
 ### Worth checking
 
 If the failed archive ran partway, claims could exist in **both** `Claims` and `ArchivedClaims`. The archive deliberately writes and saves before deleting, so nothing is lost — but do check for duplicates. The new duplicate-ID warning in `GetAllClaims` will tell you if any are still in the working sheet.
+
+## 7g. Password-protecting the database
+
+The central `Claim_Calling_Tracker.xlsx` is saved with a **file-open password**. For `.xlsx` Excel then encrypts the whole file (AES), so double-clicking it on the share drive just brings up a password prompt — there is nothing readable without the password, in Excel or by unzipping the file.
+
+The password lives in one place, `modConfig`:
+
+```vb
+Private Const DB_PASSWORD As String = "Change-Me-Before-Use-2026!"
+```
+
+Every open the app makes — read or write — goes through a single function, `modUtils.OpenDBCore`, which supplies it. Saves made by the app keep the encryption, so the file is protected at rest all the time, not just after setup.
+
+### Setup (once)
+
+1. Take a backup copy of the database file.
+2. Change `DB_PASSWORD` in `modConfig` to a strong password. **Store it somewhere safe that is not the macro file** — a password manager, or lodged with IT. Excel's encryption has no recovery: lose the password and the data is gone.
+3. Make sure nobody has the app or file open, then run **`modMain.ProtectDatabase`** (Admin only). Leave the "current password" prompt blank the first time. It encrypts the file, then re-opens it with the app's password to prove the round trip before reporting success.
+4. **Lock the VBA project**: VBA editor → Tools → VBAProject Properties → Protection → tick *Lock project for viewing* and set a *different* password.
+5. Distribute the macro file.
+
+### Rotating the password
+
+Change `DB_PASSWORD`, run `ProtectDatabase`, enter the **old** password when asked, and send everyone the new macro file. Old copies will fail with *"the database password in this macro file does not match"* — a clear message rather than a cryptic error. `modMain.CheckDatabaseAccess` lets any user confirm their copy works.
+
+### How the open logic behaves now
+
+| Situation | Behaviour |
+|---|---|
+| Wrong password | Fails **immediately** with the "out of date" message. Not retried — retrying a wrong password five times just wastes 15 seconds |
+| File being saved by someone else | Retried, as before |
+| Opened read-only when the app needs to write | Treated as busy and retried |
+
+That last row fixes a latent bug: with `Notify:=False`, Excel quietly opens a file another user holds as **read-only** instead of failing. The app would then carry on and its save would fail. Write opens now check `wb.ReadOnly`.
+
+### What this protects against — and what it doesn't
+
+| Protects against | Does **not** protect against |
+|---|---|
+| Someone double-clicking the file on the share | Someone who opens the macro file's VBA editor and reads `modConfig` |
+| Copying the file elsewhere and opening it | VBA project-lock bypass tools, which are freely available |
+| Accidental edits outside the app | Data already copied out — the `DL_` sheets from Download are unencrypted |
+
+So this is the right protection against **casual and accidental** direct access, which is what you asked for. It isn't a defence against a determined insider who has the macro file. If that becomes a requirement, the real controls are share-folder permissions (restrict who can reach the file at all) or moving the data into a database server with per-user logins — `modDataAccess` / `clsClaimRepository` are the only layers that would change.
+
+### Also fixed in this round
+
+Twenty-two module-level declarations were sitting **below** the first procedure in `clsAppContext`, `clsFormStyler`, `modUtils` and `modConfig`. VBA only allows declarations in the section above the first procedure, so those modules would not have compiled. They've all been moved up; no behaviour changes.
 
 ## 8. Distribute
 Save `CallTrail_App.xlsm`, digitally sign it or have IT trust the location, and send a copy to each caller. Everyone points at the same `DB_PATH`.

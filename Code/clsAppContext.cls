@@ -14,7 +14,7 @@ Option Explicit
 ' One shared object handed to every page controller. This is what makes
 ' the tabbed shell cheaper than five separate forms rather than more
 ' expensive.
-
+'
 ' Without it, each tab would hit the shared workbook on its own: the
 ' View tab loads all claims, the Search tab loads them again, the Admin
 ' tab checks the role again. Every one of those is an open/read/close
@@ -25,44 +25,42 @@ Option Explicit
 ' the list reloads it. Nothing reloads speculatively.
 ' =====================================================================
 
-Private m_repo As ClsClaimRepository
+Private m_repo As clsClaimRepository
 Private m_claims As Collection
 Private m_claimsLoaded As Boolean
 Private m_isAdmin As Boolean
 Private m_roleChecked As Boolean
-Private m_statusSink As Object          ' the shell form, for status-bar messages
+Private m_statusSink As Object      ' the shell form, for status-bar messages
 
-
+' --- module-level state (VBA requires these above the first procedure) ---
 Private m_registered As Boolean
 Private m_role As String
 Private m_defaultLocation As String
-
+Private m_uiScale As Single
 
 Private Sub Class_Initialize()
-    Set m_repo = New ClsClaimRepository
+    Set m_repo = New clsClaimRepository
     Set m_claims = New Collection
     m_claimsLoaded = False
     m_roleChecked = False
 End Sub
 
-Public Property Get repo() As ClsClaimRepository
-    Set repo = m_repo
+Public Property Get Repo() As clsClaimRepository
+    Set Repo = m_repo
 End Property
 
 ' ---------------------------------------------------------------------
 ' The cached claim list. Loads on first use, then serves from memory.
 ' Pass forceReload:=True after a write, or for an explicit Refresh.
 ' ---------------------------------------------------------------------
-Public Function claims(Optional ByVal forceReload As Boolean = False) As Collection
-    
+Public Function Claims(Optional ByVal forceReload As Boolean = False) As Collection
     If forceReload Or Not m_claimsLoaded Then
         SetStatus "Loading claims..."
         Set m_claims = m_repo.GetAllClaims()
         m_claimsLoaded = True
         SetStatus "Ready."
     End If
-    Set claims = m_claims
-
+    Set Claims = m_claims
 End Function
 
 ' Call this after ANY write that changes the Claims sheet. It doesn't
@@ -76,9 +74,7 @@ Public Property Get ClaimsAreLoaded() As Boolean
     ClaimsAreLoaded = m_claimsLoaded
 End Property
 
-
-
-
+' ---------------------------------------------------------------------
 ' User identity, cached. Role and registration don't change mid-session,
 ' and checking means opening the shared workbook, so we do it once.
 '
@@ -87,10 +83,9 @@ End Property
 ' ---------------------------------------------------------------------
 
 Private Sub EnsureUserLoaded()
-
     Dim wb As Workbook
-    Dim Role As String, loc As String
-    
+    Dim role As String, loc As String
+
     If m_roleChecked Then Exit Sub
     m_roleChecked = True
     m_role = "Guest"
@@ -98,48 +93,21 @@ Private Sub EnsureUserLoaded()
     On Error Resume Next
     Set wb = OpenCentralDB()
     If Not wb Is Nothing Then
-        m_registered = GetUserRecord(wb, Role, loc)
+        m_registered = GetUserRecord(wb, role, loc)
         CloseCentralDB wb, False
         If m_registered Then
-            m_role = Role
+            m_role = role
             m_defaultLocation = loc
-            m_isAdmin = (LCase$(Role) = "admin")
+            m_isAdmin = (LCase$(role) = "admin")
         End If
     End If
-    
-     On Error GoTo 0
-
+    On Error GoTo 0
 End Sub
-
 
 Public Property Get IsAdmin() As Boolean
     EnsureUserLoaded
     IsAdmin = m_isAdmin
 End Property
-
-
-
-'
-'' ---------------------------------------------------------------------
-'' Admin check, cached. Role doesn't change mid-session, and checking it
-'' means opening the shared workbook, so we do it once.
-'' ---------------------------------------------------------------------
-'Public Property Get IsAdmin() As Boolean
-'    Dim wb As Workbook
-'
-'    If Not m_roleChecked Then
-'        On Error Resume Next
-'        Set wb = OpenCentralDB()
-'        If Not wb Is Nothing Then
-'            m_isAdmin = IsCurrentUserAdmin(wb)
-'            CloseCentralDB wb, False
-'        End If
-'        On Error GoTo 0
-'        m_roleChecked = True
-'    End If
-'    IsAdmin = m_isAdmin
-'End Property
-
 
 ' False means the Windows user isn't in the Users sheet at all.
 Public Property Get IsRegistered() As Boolean
@@ -151,7 +119,6 @@ Public Property Get Role() As String
     EnsureUserLoaded
     Role = m_role
 End Property
-
 
 ' The site to pre-fill on the Add Claim form. Empty if the user is
 ' unregistered or the Users sheet has no DefaultLocation column.
@@ -165,16 +132,30 @@ Public Sub ResetUserCache()
     m_defaultLocation = ""
 End Sub
 
-
-
 Public Property Get DefaultLocation() As String
     EnsureUserLoaded
     DefaultLocation = m_defaultLocation
 End Property
 
+Public Property Get UserName() As String
+    UserName = GetWindowsUserName()
+End Property
 
-Public Property Get userName() As String
-    userName = GetWindowsUserName()
+' ---------------------------------------------------------------------
+' UI scale, measured once by the shell and reused by every page.
+'
+' Calibration creates and measures a temporary label, so doing it in all
+' six places (shell + five tabs) would repeat the same measurement six
+' times for an identical answer.
+' ---------------------------------------------------------------------
+
+Public Property Get UIScale() As Single
+    If m_uiScale <= 0 Then m_uiScale = 1    ' not calibrated yet
+    UIScale = m_uiScale
+End Property
+
+Public Property Let UIScale(ByVal v As Single)
+    If v > 0 Then m_uiScale = v
 End Property
 
 ' ---------------------------------------------------------------------
@@ -199,4 +180,3 @@ Private Sub Class_Terminate()
     Set m_claims = Nothing
     Set m_statusSink = Nothing
 End Sub
-
