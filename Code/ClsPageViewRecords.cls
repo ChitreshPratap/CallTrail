@@ -19,7 +19,7 @@ Option Explicit
 Implements IPage
 
 Private m_ctx As clsAppContext
-Private m_pg As Msforms.Page
+Private m_pg As MSForms.Page
 Private m_shown As Collection
 Private m_shown_history As Collection
 Private m_loading As Boolean
@@ -27,65 +27,65 @@ Private m_arranged As Boolean
 
 Private Const MAX_LIST_ROWS As Long = 10000
 
-Private WithEvents cboStatus As Msforms.ComboBox
+Private WithEvents cboStatus As MSForms.ComboBox
 Attribute cboStatus.VB_VarHelpID = -1
 'Attribute cboStatus.VB_VarHelpID = -1
-Private WithEvents cboDateField As Msforms.ComboBox
+Private WithEvents cboDateField As MSForms.ComboBox
 Attribute cboDateField.VB_VarHelpID = -1
 'Attribute cboDateField.VB_VarHelpID = -1
-Private WithEvents txtSearch As Msforms.TextBox
+Private WithEvents txtSearch As MSForms.TextBox
 Attribute txtSearch.VB_VarHelpID = -1
 'Attribute txtSearch.VB_VarHelpID = -1
 
-Private WithEvents cmdApply As Msforms.Label
+Private WithEvents cmdApply As MSForms.Label
 Attribute cmdApply.VB_VarHelpID = -1
 'Attribute cmdApply.VB_VarHelpID = -1
-Private WithEvents cmdClear As Msforms.Label
+Private WithEvents cmdClear As MSForms.Label
 Attribute cmdClear.VB_VarHelpID = -1
 'Attribute cmdClear.VB_VarHelpID = -1
-Private WithEvents cmdRefresh As Msforms.Label
+Private WithEvents cmdRefresh As MSForms.Label
 Attribute cmdRefresh.VB_VarHelpID = -1
 'Attribute cmdRefresh.VB_VarHelpID = -1
-Private WithEvents lstClaims As Msforms.ListBox
+Private WithEvents lstClaims As MSForms.ListBox
 Attribute lstClaims.VB_VarHelpID = -1
 'Attribute lstClaims.VB_VarHelpID = -1
-Private WithEvents lstHistory As Msforms.ListBox
+Private WithEvents lstHistory As MSForms.ListBox
 Attribute lstHistory.VB_VarHelpID = -1
 'Attribute lstClaims.VB_VarHelpID = -1
 
-Private txtDateFrom As Msforms.TextBox
-Private txtDateTo As Msforms.TextBox
+Private txtDateFrom As MSForms.TextBox
+Private txtDateTo As MSForms.TextBox
 'Private lstHistory As MSForms.ListBox
-Private lblCount As Msforms.Label
+Private lblCount As MSForms.Label
 
 ' Detail labels
-Private frameDetails As Msforms.frame
-Private multiPageDetails As Msforms.MultiPage
-Private lstViewHistory As Msforms.ListBox
-Private lblClaimID As Msforms.Label
-Private lblClaimSite As Msforms.Label
-Private lblProviderName As Msforms.Label
-Private lblQuery As Msforms.Label
-Private lblStatus As Msforms.Label
-Private lblAttempt As Msforms.Label
-Private lblCreated As Msforms.Label
-Private lblUpdatedClaimSite As Msforms.Label
-Private lblInsertedOn As Msforms.Label
-Private lblInsertedBy As Msforms.Label
-Private lblLastUpdated As Msforms.Label
-Private lblLastUpdatedBy As Msforms.Label
-Private lblLastComment As Msforms.Label
-Private lblClosedOn As Msforms.Label
-Private lblDaysOpen As Msforms.Label
+Private frameDetails As MSForms.frame
+Private multiPageDetails As MSForms.MultiPage
+Private lstViewHistory As MSForms.ListBox
+Private lblClaimID As MSForms.Label
+Private lblClaimSite As MSForms.Label
+Private lblProviderName As MSForms.Label
+Private lblQuery As MSForms.Label
+Private lblStatus As MSForms.Label
+Private lblAttempt As MSForms.Label
+Private lblCreated As MSForms.Label
+Private lblUpdatedClaimSite As MSForms.Label
+Private lblInsertedOn As MSForms.Label
+Private lblInsertedBy As MSForms.Label
+Private lblLastUpdated As MSForms.Label
+Private lblLastUpdatedBy As MSForms.Label
+Private lblLastComment As MSForms.Label
+Private lblClosedOn As MSForms.Label
+Private lblDaysOpen As MSForms.Label
 
 
 ' Detail history
-Private lblHistoryId As Msforms.Label
-Private lblHistoryClaimId As Msforms.Label
-Private lblHistoryCallerName As Msforms.Label
-Private lblHistoryCallDate As Msforms.Label
-Private lblHistoryCallComment As Msforms.Label
-Private lblHistoryCallStatus As Msforms.Label
+Private lblHistoryId As MSForms.Label
+Private lblHistoryClaimId As MSForms.Label
+Private lblHistoryCallerName As MSForms.Label
+Private lblHistoryCallDate As MSForms.Label
+Private lblHistoryCallComment As MSForms.Label
+Private lblHistoryCallStatus As MSForms.Label
 
 Private collectionStyledControls As Collection
 
@@ -93,7 +93,7 @@ Private Property Get IPage_PageTitle() As String
     IPage_PageTitle = "View Claims"
 End Property
 
-Private Sub IPage_InitPage(ctx As clsAppContext, pg As Msforms.Page)
+Private Sub IPage_InitPage(ctx As clsAppContext, pg As MSForms.Page)
     
     Set m_ctx = ctx
     Set m_pg = pg
@@ -153,7 +153,7 @@ Private Sub IPage_InitPage(ctx As clsAppContext, pg As Msforms.Page)
     
 End Sub
 
-Private Sub ConfigureHistoryList(lst As Msforms.ListBox)
+Private Sub ConfigureHistoryList(lst As MSForms.ListBox)
 
     With lst
         .ColumnCount = 4
@@ -164,7 +164,7 @@ Private Sub ConfigureHistoryList(lst As Msforms.ListBox)
 End Sub
 
 
-Private Sub ConfigureClaimList(lst As Msforms.ListBox)
+Private Sub ConfigureClaimList(lst As MSForms.ListBox)
       
     ' 3. Define your headers in an Array
     With lst
@@ -438,12 +438,12 @@ Private Sub ArrangeUI()
         .Left = -1
         .Top = -1
                 
+                
         'Styling frame details
         .frameDetailsViewRecords.Top = -1
         .frameDetailsViewRecords.Left = .width - .frameDetailsViewRecords.width
         .frameDetailsViewRecords.height = .height
-                        
-                        
+                                                        
         .lblHeadingViewRecords.Top = 4.5
         .lblHeadingViewRecords.Left = 9
         Styler.getStyledHeading .lblHeadingViewRecords
@@ -459,14 +459,14 @@ Private Sub ArrangeUI()
         multiPageDetails.height = .frameDetailsViewRecords.height
         multiPageDetails.width = .frameDetailsViewRecords.width
                                 
-                                
+                                        
         .frameFilterViewClaims.Left = 0
         .frameFilterViewClaims.height = multiPageDetails.height
         .frameFilterViewClaims.Top = -2
         .frameFilterViewClaims.BorderStyle = fmBorderStyleNone
         .frameFilterViewClaims.ZOrder 0
         .frameFilterViewClaims.BackColor = VarnahUtil.getFadeColor(AppUtil.getThemeColor(), 0.96)
-        
+                       
         .frameViewRecordDetails.width = multiPageDetails.width
         .frameViewRecordDetails.Left = 0
         .frameViewRecordDetails.height = multiPageDetails.height
@@ -483,6 +483,8 @@ Private Sub ArrangeUI()
         .frameViewHistoryDetail.ZOrder 1
         .frameViewHistoryDetail.BackColor = VarnahUtil.getFadeColor(AppUtil.getThemeColor(), 0.96)
         
+        
+        
 '        .frameViewRecords.Left = 10
 '        .frameViewRecords.width = .width - multiPageDetails.width - 2 * .frameViewRecords.Left
 '        .frameViewRecords.Top = 50
@@ -498,6 +500,9 @@ Private Sub ArrangeUI()
         .lstViewClaims.Font.Name = "Segoe UI"
         .lstViewClaims.Font.Size = 10
         
+        lblCount.Left = .lstViewClaims.Left + .lstViewClaims.width - lblCount.width
+        lblCount.Top = .lstViewClaims.Top - lblCount.height - 8
+        lblCount.Font.Italic = True
                         
 '        .frameViewHistory.Left = 10
 '        .frameViewHistory.width = .width - .frameFilterViewClaims.width - 2 * .frameViewHistory.Left

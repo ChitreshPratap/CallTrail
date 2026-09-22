@@ -26,77 +26,77 @@ Option Explicit
 Implements IPage
 
 Private m_ctx As clsAppContext
-Private m_pg As Msforms.Page
+Private m_pg As MSForms.Page
 Private m_arranged As Boolean
 
-Private WithEvents cmdChangeSite As Msforms.CommandButton
+Private WithEvents cmdChangeSite As MSForms.CommandButton
 Attribute cmdChangeSite.VB_VarHelpID = -1
 'Attribute cmdChangeSite.VB_VarHelpID = -1
-Private WithEvents cmdBulkSetup As Msforms.CommandButton
+Private WithEvents cmdBulkSetup As MSForms.CommandButton
 Attribute cmdBulkSetup.VB_VarHelpID = -1
 'Attribute cmdBulkSetup.VB_VarHelpID = -1
-Private WithEvents cmdBulkLoadFile As Msforms.CommandButton
+Private WithEvents cmdBulkLoadFile As MSForms.CommandButton
 Attribute cmdBulkLoadFile.VB_VarHelpID = -1
 'Attribute cmdBulkLoadFile.VB_VarHelpID = -1
-Private WithEvents cmdBulkCheck As Msforms.CommandButton
+Private WithEvents cmdBulkCheck As MSForms.CommandButton
 Attribute cmdBulkCheck.VB_VarHelpID = -1
 'Attribute cmdBulkCheck.VB_VarHelpID = -1
-Private WithEvents cmdBulkProcess As Msforms.CommandButton
+Private WithEvents cmdBulkProcess As MSForms.CommandButton
 Attribute cmdBulkProcess.VB_VarHelpID = -1
 'Attribute cmdBulkProcess.VB_VarHelpID = -1
-Private WithEvents cmdReopen As Msforms.CommandButton
+Private WithEvents cmdReopen As MSForms.CommandButton
 Attribute cmdReopen.VB_VarHelpID = -1
 'Attribute cmdReopen.VB_VarHelpID = -1
-Private WithEvents cmdCheckStatus As Msforms.CommandButton
+Private WithEvents cmdCheckStatus As MSForms.CommandButton
 Attribute cmdCheckStatus.VB_VarHelpID = -1
 'Attribute cmdCheckStatus.VB_VarHelpID = -1
-Private WithEvents cmdDownload As Msforms.CommandButton
+Private WithEvents cmdDownload As MSForms.CommandButton
 Attribute cmdDownload.VB_VarHelpID = -1
 
 
-Private WithEvents cmdArchivePreview As Msforms.Label
+Private WithEvents cmdArchivePreview As MSForms.Label
 Attribute cmdArchivePreview.VB_VarHelpID = -1
 'Attribute cmdArchivePreview.VB_VarHelpID = -1
-Private WithEvents cmdArchiveRun As Msforms.Label
+Private WithEvents cmdArchiveRun As MSForms.Label
 Attribute cmdArchiveRun.VB_VarHelpID = -1
 'Attribute cmdArchiveRun.VB_VarHelpID = -1
-Private WithEvents cboArchiveAge As Msforms.ComboBox
+Private WithEvents cboArchiveAge As MSForms.ComboBox
 Attribute cboArchiveAge.VB_VarHelpID = -1
 'Attribute cboArchiveAge.VB_VarHelpID = -1
-Private WithEvents chkArchiveClosedOnly As Msforms.CheckBox
+Private WithEvents chkArchiveClosedOnly As MSForms.CheckBox
 Attribute chkArchiveClosedOnly.VB_VarHelpID = -1
 'Attribute chkArchiveClosedOnly.VB_VarHelpID = -1
 
-Private WithEvents lstArchiveClaims As Msforms.ListBox
+Private WithEvents lstArchiveClaims As MSForms.ListBox
 Attribute lstArchiveClaims.VB_VarHelpID = -1
 'Attribute lstArchiveClaims.VB_VarHelpID = -1
  
  Private collectionStyledControls As Collection
 
-Private txtSiteClaimID As Msforms.TextBox
-Private txtNewSite As Msforms.TextBox
-Private txtReopenClaimID As Msforms.TextBox
-Private txtReopenReason As Msforms.TextBox
-Private lblReopenStatus As Msforms.Label
-Private lblArchivePreview As Msforms.Label
-Private lblAdminUser As Msforms.Label
+Private txtSiteClaimID As MSForms.TextBox
+Private txtNewSite As MSForms.TextBox
+Private txtReopenClaimID As MSForms.TextBox
+Private txtReopenReason As MSForms.TextBox
+Private lblReopenStatus As MSForms.Label
+Private lblArchivePreview As MSForms.Label
+Private lblAdminUser As MSForms.Label
 
 Private Const MAX_PREVIEW_ROWS As Long = 5000
-Private lstArchiveHistory As Msforms.ListBox
-Private lblArchiveHistCount As Msforms.Label
+Private lstArchiveHistory As MSForms.ListBox
+Private lblArchiveHistCount As MSForms.Label
 
 ' The claims currently shown in the preview list. Held so a click can
 ' map a list row back to a claim without re-running the filter.
 Private m_previewClaims As Collection
 
 
-Private lblBulkInfo As Msforms.Label
+Private lblBulkInfo As MSForms.Label
 
 Private Property Get IPage_PageTitle() As String
     IPage_PageTitle = "Admin"
 End Property
 
-Private Sub IPage_InitPage(ctx As clsAppContext, pg As Msforms.Page)
+Private Sub IPage_InitPage(ctx As clsAppContext, pg As MSForms.Page)
     Set m_ctx = ctx
     Set m_pg = pg
                                             
@@ -146,7 +146,6 @@ End Sub
 
 Private Sub IPage_OnActivate()
 
-    ArrangeUI
     If Not m_arranged Then
          ArrangeUI
          m_arranged = True

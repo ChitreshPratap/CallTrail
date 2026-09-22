@@ -70,7 +70,7 @@ Private Sub cmdSearch_Click()
 End Sub
 
 ' Enter key in the search box searches
-Private Sub txtSearchID_KeyDown(ByVal KeyCode As Msforms.ReturnInteger, ByVal Shift As Integer)
+Private Sub txtSearchID_KeyDown(ByVal KeyCode As MSForms.ReturnInteger, ByVal Shift As Integer)
     If KeyCode = vbKeyReturn Then DoSearch
 End Sub
 

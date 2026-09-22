@@ -1,12 +1,12 @@
 Attribute VB_Name = "ListBoxUtil"
 Option Explicit
 
-Public Sub CreateListBoxHeaders(lst As Msforms.ListBox, _
+Public Sub CreateListBoxHeaders(lst As MSForms.ListBox, _
                                 headerNames As Variant, _
                                 Optional headerHeight As Double = 15)
     
     Dim i As Integer
-    Dim lbl As Msforms.Label
+    Dim lbl As MSForms.Label
     Dim currentLeft As Single
     Dim colWidths() As String
     Dim singleWidth As Single
@@ -78,7 +78,7 @@ End Sub
 
 
 
-Public Sub generateListBoxHeaders(lst As Msforms.ListBox, _
+Public Sub generateListBoxHeaders(lst As MSForms.ListBox, _
                                 headerNames As Variant, _
                                 Optional HeaderColor As Long = &H4A4643, _
                                 Optional boundedHeaderColor As Long = -1, _
@@ -89,7 +89,7 @@ Public Sub generateListBoxHeaders(lst As Msforms.ListBox, _
     On Error GoTo ErrorHandler
     
     Dim i As Integer
-    Dim lbl As Msforms.Label
+    Dim lbl As MSForms.Label
     Dim currentLeft As Single
     Dim colWidths() As String
     Dim singleWidth As Single

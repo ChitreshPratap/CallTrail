@@ -28,38 +28,42 @@ Option Explicit
 Implements IPage
 
 Private m_ctx As clsAppContext
-Private m_pg As Msforms.Page
+Private m_pg As MSForms.Page
 Private m_arranged As Boolean
 
 ' Feature rows - caption label and its description
 Private Const FEATURE_COUNT As Long = 6
-Private m_featureLabels(1 To FEATURE_COUNT) As Msforms.Label
+Private m_featureLabels(1 To FEATURE_COUNT) As MSForms.Label
 
-Private WithEvents cmdGoLogCall As Msforms.CommandButton
+Private WithEvents cmdGoLogCall As MSForms.Label
 Attribute cmdGoLogCall.VB_VarHelpID = -1
 'Attribute cmdGoLogCall.VB_VarHelpID = -1
-Private WithEvents cmdRefreshUser As Msforms.CommandButton
+Private WithEvents cmdRefreshUser As MSForms.Label
 Attribute cmdRefreshUser.VB_VarHelpID = -1
 'Attribute cmdRefreshUser.VB_VarHelpID = -1
 
-Private lblWelcome As Msforms.Label
-Private lblUserName As Msforms.Label
-Private lblRole As Msforms.Label
-Private lblRegStatus As Msforms.Label
-Private lblGuestNotice As Msforms.Label
-Private imgHome As Msforms.Image
+Private lblWelcome As MSForms.Label
+Private lblUserName As MSForms.Label
+Private lblRole As MSForms.Label
+Private lblRegStatus As MSForms.Label
+Private lblGuestNotice As MSForms.Label
+Private imgHome As MSForms.Image
+
+Private collectionStyledControls As Collection
 
 Private Property Get IPage_PageTitle() As String
     IPage_PageTitle = "Home"
 End Property
 
-Private Sub IPage_InitPage(ctx As clsAppContext, pg As Msforms.Page)
+Private Sub IPage_InitPage(ctx As clsAppContext, pg As MSForms.Page)
     Set m_ctx = ctx
     Set m_pg = pg
     BindControls
 End Sub
 
 Private Sub IPage_OnActivate()
+    
+    ArrangeUI
     If Not m_arranged Then
         ArrangeUI
         m_arranged = True
@@ -84,16 +88,84 @@ Private Sub BindControls()
 
     Set cmdGoLogCall = BindOptional(m_pg, "cmdHomeStart")
     Set cmdRefreshUser = BindOptional(m_pg, "cmdHomeRefreshUser")
-
+    
+    Set collectionStyledControls = New Collection
+    
     For i = 1 To FEATURE_COUNT
         Set m_featureLabels(i) = BindControl(m_pg, "lblHomeFeature" & i, IPage_PageTitle)
     Next i
 End Sub
 
+Private Sub ArrangeUI()
+
+  'Dim m_pg As UserFormMain
+    
+    With m_pg.framePageHome
+        
+        .width = m_pg.Parent.width + 1
+        .height = m_pg.Parent.height + 1
+        .Left = -1
+        .Top = -1
+        .BackColor = RGB(255, 255, 255)
+                
+        cmdRefreshUser.Left = .width - cmdRefreshUser.width - 10
+        cmdRefreshUser.Top = 4.5
+        
+        .lblHomeWelcome.Top = 4.5
+        .lblHomeWelcome.Left = 9
+        .lblHomeWelcome.foreColor = VarnahUtil.getFadeColor(AppUtil.getThemeColor(), 0.2)
+        .lblHomeWelcome.width = cmdRefreshUser.Left - 2 * .lblHomeWelcome.Left
+
+        
+        
+        .lblHeadingULineHome.Top = .lblHomeWelcome.Top + .lblHomeWelcome.height + 2
+        .lblHeadingULineHome.Left = 9
+        .lblHeadingULineHome.BackColor = VarnahUtil.getFadeColor(AppUtil.getThemeColor(), 0.2)
+        .lblHeadingULineHome.width = .width - 2 * .lblHeadingULineHome.Left
+        .lblHeadingULineHome.height = 2
+        
+        
+        .frameUserDetailsHome.Top = .lblHeadingULineHome.Top + .lblHeadingULineHome.height + 10
+        .frameUserDetailsHome.Left = 20
+        .frameUserDetailsHome.width = .frameUserDetailsHome.Parent.width - 2 * .frameUserDetailsHome.Left
+        .frameUserDetailsHomeHeading.Left = 10
+        lblUserName.Left = .frameUserDetailsHome.Left + .frameUserDetailsHomeHeading.width + 20
+        lblUserName.width = .frameUserDetailsHome.width - (2 * lblUserName.Left)
+        lblGuestNotice.Left = lblUserName.Left
+        lblGuestNotice.width = lblUserName.width
+                
+                
+        .frameFeaturesHome.Top = .frameUserDetailsHome.Top + .frameUserDetailsHome.height
+        .frameFeaturesHome.Left = .frameUserDetailsHome.Left
+        .frameFeaturesHome.width = .frameFeaturesHome.Parent.width - 2 * .frameFeaturesHome.Left
+        .frameFeaturesHomeHeading.Left = 10
+        
+        Dim tmpLblFeature As MSForms.Label
+        Dim featureParent As Object
+        Dim i As Long
+        For i = 1 To FEATURE_COUNT
+            'ui.Note "lblHomeFeature" & i, FeatureText(i), height:=16, width:=380
+            Set tmpLblFeature = FormUtil.getControlByName(m_pg.framePageHome, "lblHomeFeature" & i, False)
+            Set featureParent = tmpLblFeature.Parent
+            tmpLblFeature.Left = 20
+            tmpLblFeature.width = featureParent.width - 2 * tmpLblFeature.Left
+            
+        Next i
+        
+        
+    End With
+    
+    collectionStyledControls.Add Styler.getStyleButton(cmdGoLogCall)
+    collectionStyledControls.Add Styler.getStyleButton(cmdRefreshUser)
+    
+    
+End Sub
+
 ' =====================================================================
 ' Layout
 ' =====================================================================
-Private Sub ArrangeUI()
+Private Sub ArrangeUI_BK()
+    
     Dim ui As New clsFormStyler
     Dim i As Long
 
@@ -147,31 +219,52 @@ End Function
 ' User status - registered, guest, admin
 ' =====================================================================
 Private Sub ShowUserStatus()
-    lblUserName.caption = m_ctx.userName
-
+            
+    Dim userString As String
+    Dim userLabelColor As Long
+    
+    'lblUserName.caption = m_ctx.userName
+    
+    userString = m_ctx.userName
+    
     If m_ctx.IsRegistered Then
-        lblRole.caption = m_ctx.Role
-        lblRole.foreColor = RGB(0, 110, 0)
-        lblRegStatus.caption = "Registered"
-        lblRegStatus.foreColor = RGB(0, 110, 0)
-        lblGuestNotice.caption = "All features are available to you." & _
-            IIf(m_ctx.DefaultLocation <> "", _
-                "  New claims will default to site: " & m_ctx.DefaultLocation & ".", "")
+        
+        userString = userString & " - " & m_ctx.DefaultLocation & " (" & m_ctx.Role & ") "
+        userLabelColor = RGB(0, 110, 0)
+               
+        'lblRole.caption = m_ctx.Role
+        'lblRole.foreColor = RGB(0, 110, 0)
+        'lblRegStatus.caption = "Registered"
+        'lblRegStatus.foreColor = RGB(0, 110, 0)
+        
+        
+        lblGuestNotice.caption = "All features are available to you."
+'        lblGuestNotice.caption = "All features are available to you." & _
+'            IIf(m_ctx.DefaultLocation <> "", _
+'                "  New claims will default to site: " & m_ctx.DefaultLocation & ".", "")
         lblGuestNotice.foreColor = RGB(90, 90, 90)
+        
     Else
-        lblRole.caption = "Guest"
-        lblRole.foreColor = RGB(170, 0, 0)
-        lblRegStatus.caption = "NOT REGISTERED"
-        lblRegStatus.foreColor = RGB(170, 0, 0)
+        userString = userString & " (Guest)"
+        userLabelColor = RGB(170, 0, 0)
+        
+'        lblRole.caption = "Guest"
+'        lblRole.foreColor = RGB(170, 0, 0)
+'        lblRegStatus.caption = "NOT REGISTERED"
+'        lblRegStatus.foreColor = RGB(170, 0, 0)
 
         ' Name the user explicitly. "You are not registered" leaves people
         ' guessing which account the app actually saw - which matters on
         ' shared machines and with multiple domain accounts.
-        lblGuestNotice.caption = "User '" & m_ctx.userName & "' is not registered in the " & _
-            "database. Every other tab is locked. Please contact your administrator to " & _
+        lblGuestNotice.caption = "User '" & m_ctx.userName & "' is not registered in the database. " & vbNewLine & _
+            "Every other tab is locked. Please contact your administrator to " & _
             "register this username, then use Re-check Registration."
         lblGuestNotice.foreColor = RGB(170, 0, 0)
+        
     End If
+    lblUserName.caption = userString
+    lblUserName.foreColor = userLabelColor
+    
 End Sub
 
 ' =====================================================================
@@ -195,11 +288,12 @@ End Sub
 Private Sub cmdRefreshUser_Click()
     
     m_ctx.ResetUserCache
+    
     ShowUserStatus
 
     If m_ctx.IsRegistered Then
         MsgBox "Registration found. Role: " & m_ctx.Role & vbCrLf & vbCrLf & _
-               "Close and reopen the app to unlock the other tabs.", _
+               "Restart the application (Close and reopen the app) to unlock the other tabs.", _
                vbInformation, "Registered"
     Else
         MsgBox "User '" & m_ctx.userName & "' is still not registered.", _

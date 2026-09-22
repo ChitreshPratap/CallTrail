@@ -1,16 +1,16 @@
 Attribute VB_Name = "modUtils"
 Option Explicit
 
+Private savedScreenUpdating As Boolean
+Private savedCalculation As XlCalculation
+Private savedEnableEvents As Boolean
+
+
 ' =====================================================================
 ' modUtils
 ' Generic helpers used across the app. Keep this file free of any
 ' Claims/History-specific logic so it stays reusable in other tools.
 ' =====================================================================
-
-' --- module-level state (VBA requires these above the first procedure) ---
-Private savedScreenUpdating As Boolean
-Private savedCalculation As XlCalculation
-Private savedEnableEvents As Boolean
 
 ' Returns the Windows login name as a fallback identity.
 ' Prefer GetCurrentUserName() below, which maps this to the Users sheet.
@@ -31,23 +31,24 @@ End Function
 ' Defaulting an unknown person to a working role meant anyone who opened
 ' the file could add and edit claims.
 ' ---------------------------------------------------------------------
-Public Function GetUserRecord(dbWb As Workbook, ByRef role As String, _
-                               ByRef defaultLocation As String) As Boolean
+Public Function GetUserRecord(dbWb As Workbook, ByRef Role As String, _
+                               ByRef DefaultLocation As String) As Boolean
+    
     Dim ws As Worksheet, lastRow As Long, i As Long
     Dim nameCol As Long, roleCol As Long, locCol As Long
     Dim winUser As String
     Dim data As Variant
 
-    role = "Guest"
-    defaultLocation = ""
+    Role = "Guest"
+    DefaultLocation = ""
     winUser = LCase$(Trim$(GetWindowsUserName()))
 
     On Error GoTo NotFound
     Set ws = dbWb.Sheets(SHEET_USERS)
     nameCol = GetColIndex(ws, "UserName")
     roleCol = GetColIndex(ws, "Role")
-
-    ' DefaultLocation is optional - an older Users sheet may not have it
+    
+     ' DefaultLocation is optional - an older Users sheet may not have it
     locCol = 0
     On Error Resume Next
     locCol = GetColIndex(ws, "DefaultLocation")
@@ -56,13 +57,13 @@ Public Function GetUserRecord(dbWb As Workbook, ByRef role As String, _
     lastRow = ws.Cells(ws.Rows.Count, nameCol).End(xlUp).Row
     If lastRow < 2 Then GoTo NotFound
 
-    data = ws.Range(ws.Cells(2, 1), ws.Cells(lastRow, ws.Cells(1, ws.Columns.Count).End(xlToLeft).Column)).Value
+    data = ws.Range(ws.Cells(2, 1), ws.Cells(lastRow, ws.Cells(1, ws.Columns.Count).End(xlToLeft).Column)).value
 
     For i = 1 To UBound(data, 1)
         If LCase$(Trim$(CStr(data(i, nameCol) & ""))) = winUser Then
-            role = Trim$(CStr(data(i, roleCol) & ""))
-            If role = "" Then role = "User"
-            If locCol > 0 Then defaultLocation = Trim$(CStr(data(i, locCol) & ""))
+            Role = Trim$(CStr(data(i, roleCol) & ""))
+            If Role = "" Then Role = "User"
+            If locCol > 0 Then DefaultLocation = Trim$(CStr(data(i, locCol) & ""))
             GetUserRecord = True
             Exit Function
         End If
@@ -74,17 +75,20 @@ End Function
 
 Public Function GetCurrentUserRole(dbWb As Workbook) As String
     Dim ws As Worksheet, lastRow As Long, i As Long
-    Dim winUser As String, nameCol As Long, roleCol As Long
+    Dim winUser As String, nameCol As Long, roleCol As Long, locationCol As Long
+    
+    
     winUser = GetWindowsUserName()
 
     Set ws = dbWb.Sheets(SHEET_USERS)
     nameCol = GetColIndex(ws, "UserName")
     roleCol = GetColIndex(ws, "Role")
+    locationCol = GetColIndex(ws, "DefaultLocation")
     lastRow = ws.Cells(ws.Rows.Count, nameCol).End(xlUp).Row
 
     For i = 2 To lastRow
-        If LCase$(Trim$(ws.Cells(i, nameCol).Value)) = LCase$(Trim$(winUser)) Then
-            GetCurrentUserRole = ws.Cells(i, roleCol).Value
+        If LCase$(Trim$(ws.Cells(i, nameCol).value)) = LCase$(Trim$(winUser)) Then
+            GetCurrentUserRole = ws.Cells(i, roleCol).value
             Exit Function
         End If
     Next i
@@ -106,8 +110,39 @@ End Function
 ' this alone is a real speedup once the DB has any volume of data,
 ' and costs nothing since these are always restored in CloseCentralDB.
 ' ---------------------------------------------------------------------
+'Private savedScreenUpdating As Boolean
+'Private savedCalculation As XlCalculation
+'Private savedEnableEvents As Boolean
 
 Public Function OpenCentralDB() As Workbook
+'    Dim attempt As Long
+'    Dim wb As Workbook
+'
+'    savedScreenUpdating = Application.ScreenUpdating
+'    savedCalculation = Application.Calculation
+'    savedEnableEvents = Application.EnableEvents
+'    Application.ScreenUpdating = False
+'    Application.EnableEvents = False
+'    Application.Calculation = xlCalculationManual
+'
+'    On Error Resume Next
+'    Do
+'        attempt = attempt + 1
+'        Set wb = Nothing
+'        Set wb = Workbooks.Open(FileName:=DB_PATH, UpdateLinks:=0, ReadOnly:=False, Notify:=False)
+'        If Not wb Is Nothing Then Exit Do
+'        If attempt >= LOCK_MAX_RETRIES Then
+'            On Error GoTo 0
+'            RestoreAppSettings
+'            Err.Raise vbObjectError + 1, "OpenCentralDB", _
+'                "Could not open the shared database after " & LOCK_MAX_RETRIES & _
+'                " attempts. Another user may be saving it right now. Please try again shortly."
+'        End If
+'        Application.Wait Now + TimeSerial(0, 0, LOCK_RETRY_WAIT_SEC)
+'    Loop
+'    On Error GoTo 0
+'
+'    Set OpenCentralDB = wb
     Set OpenCentralDB = OpenDBCore(False)
 End Function
 
@@ -117,9 +152,9 @@ End Function
 Public Sub CloseCentralDB(wb As Workbook, ByVal saveChanges As Boolean)
     On Error Resume Next
     If saveChanges Then
-        wb.Save
+        wb.save
     End If
-    wb.Close SaveChanges:=False ' already saved above; avoids double prompt
+    wb.Close saveChanges:=False ' already saved above; avoids double prompt
     On Error GoTo 0
     RestoreAppSettings
 End Sub
@@ -139,7 +174,36 @@ End Sub
 ' bounced to read-only themselves. A read-only open takes no such lock.
 ' ---------------------------------------------------------------------
 Public Function OpenCentralDBReadOnly() As Workbook
-    Set OpenCentralDBReadOnly = OpenDBCore(True)
+
+'    Dim attempt As Long
+'    Dim wb As Workbook
+'
+'    savedScreenUpdating = Application.ScreenUpdating
+'    savedCalculation = Application.Calculation
+'    savedEnableEvents = Application.EnableEvents
+'    Application.ScreenUpdating = False
+'    Application.EnableEvents = False
+'    Application.Calculation = xlCalculationManual
+'
+'    On Error Resume Next
+'    Do
+'        attempt = attempt + 1
+'        Set wb = Nothing
+'        Set wb = Workbooks.Open(FileName:=DB_PATH, UpdateLinks:=0, ReadOnly:=True, Notify:=False)
+'        If Not wb Is Nothing Then Exit Do
+'        If attempt >= LOCK_MAX_RETRIES Then
+'            On Error GoTo 0
+'            RestoreAppSettings
+'            Err.Raise vbObjectError + 4, "OpenCentralDBReadOnly", _
+'                "Could not open the shared database after " & LOCK_MAX_RETRIES & " attempts."
+'        End If
+'        Application.Wait Now + TimeSerial(0, 0, LOCK_RETRY_WAIT_SEC)
+'    Loop
+'    On Error GoTo 0
+'
+'    Set OpenCentralDBReadOnly = wb
+     Set OpenCentralDBReadOnly = OpenDBCore(True)
+
 End Function
 
 ' ---------------------------------------------------------------------
@@ -161,11 +225,13 @@ End Function
 '    of failing. Every later Save would then fail, or worse, look like it
 '    worked. So a write open checks wb.ReadOnly and treats True as "busy".
 ' ---------------------------------------------------------------------
+
 Private Function OpenDBCore(ByVal readOnly As Boolean) As Workbook
+
     Dim attempt As Long
     Dim wb As Workbook
     Dim errMsg As String
-
+    
     savedScreenUpdating = Application.ScreenUpdating
     savedCalculation = Application.Calculation
     savedEnableEvents = Application.EnableEvents
@@ -176,12 +242,15 @@ Private Function OpenDBCore(ByVal readOnly As Boolean) As Workbook
     Do
         attempt = attempt + 1
         Set wb = Nothing
-        errMsg = ""
-
-        On Error Resume Next
+        
+        
+'        Set wb = Workbooks.Open(FileName:=DB_PATH, UpdateLinks:=0, readOnly:=True, Notify:=False)
+         errMsg = ""
+          On Error Resume Next
         Set wb = Workbooks.Open(FileName:=DB_PATH, UpdateLinks:=0, _
-                                ReadOnly:=readOnly, Notify:=False, _
+                                readOnly:=readOnly, Notify:=False, _
                                 Password:=DbPassword(), IgnoreReadOnlyRecommended:=True)
+                                
         If Err.Number <> 0 Then errMsg = Err.Description
         On Error GoTo 0
 
@@ -196,26 +265,35 @@ Private Function OpenDBCore(ByVal readOnly As Boolean) As Workbook
 
         ' --- opened, but read-only when we need to write: someone holds it ---
         If Not wb Is Nothing And Not readOnly Then
-            If wb.ReadOnly Then
-                wb.Close SaveChanges:=False
+            If wb.readOnly Then
+                wb.Close saveChanges:=False
                 Set wb = Nothing
             End If
         End If
-
+        
+        
+        
+        
+        
         If Not wb Is Nothing Then Exit Do
-
         If attempt >= LOCK_MAX_RETRIES Then
             RestoreAppSettings
             Err.Raise vbObjectError + 1, "OpenCentralDB", _
                 "Could not open the shared database after " & LOCK_MAX_RETRIES & _
                 " attempts. Another user may be saving it right now. Please try again shortly." & _
                 IIf(errMsg <> "", vbCrLf & vbCrLf & "Last error: " & errMsg, "")
+                
         End If
         Application.Wait Now + TimeSerial(0, 0, LOCK_RETRY_WAIT_SEC)
     Loop
 
     Set OpenDBCore = wb
+    
 End Function
+
+
+
+
 
 Public Function NextHistoryID(dbWb As Workbook) As Long
     Dim ws As Worksheet, lastRow As Long, idCol As Long
@@ -249,7 +327,7 @@ Public Function FindClaimRow(dbWb As Workbook, ByVal claimID As String) As Long
     End If
 
     target = Trim$(claimID)
-    idArr = ws.Range(ws.Cells(2, idCol), ws.Cells(lastRow, idCol)).Value ' single bulk read
+    idArr = ws.Range(ws.Cells(2, idCol), ws.Cells(lastRow, idCol)).value ' single bulk read
 
     ' A single-row result comes back as a plain value, not an array -
     ' handle that edge case (lastRow = 2) explicitly.
@@ -286,7 +364,7 @@ Public Function GetColIndex(ws As Worksheet, ByVal headerName As String) As Long
     Dim lastCol As Long, i As Long
     lastCol = ws.Cells(1, ws.Columns.Count).End(xlToLeft).Column
     For i = 1 To lastCol
-        If Trim$(LCase$(CStr(ws.Cells(1, i).Value))) = Trim$(LCase$(headerName)) Then
+        If Trim$(LCase$(CStr(ws.Cells(1, i).value))) = Trim$(LCase$(headerName)) Then
             GetColIndex = i
             Exit Function
         End If
@@ -308,7 +386,7 @@ Public Function BuildHeaderMap(ws As Worksheet) As Object
 
     Set map = CreateObject("Scripting.Dictionary")
     lastCol = ws.Cells(1, ws.Columns.Count).End(xlToLeft).Column
-    headerRow = ws.Range(ws.Cells(1, 1), ws.Cells(1, lastCol)).Value ' 1 bulk read
+    headerRow = ws.Range(ws.Cells(1, 1), ws.Cells(1, lastCol)).value ' 1 bulk read
 
     If lastCol = 1 Then
         map(Trim$(LCase$(CStr(headerRow)))) = 1

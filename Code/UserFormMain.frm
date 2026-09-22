@@ -76,7 +76,7 @@ Private Sub Frame1_Enter()
     MsgBox "Entered"
 End Sub
 
-Private Sub Frame1_Exit(ByVal Cancel As Msforms.ReturnBoolean)
+Private Sub Frame1_Exit(ByVal Cancel As MSForms.ReturnBoolean)
     MsgBox "Exited"
 End Sub
 
@@ -85,19 +85,8 @@ Private Sub cmdViewClose_Click()
     Me.frameFilterViewClaims.Visible = False
 End Sub
 
-Private Sub frameMain_Click()
 
-End Sub
-
-Private Sub framePageHome_Click()
-
-End Sub
-
-Private Sub framePageSearchEdit_Click()
-
-End Sub
-
-Private Sub frameViewRecords_Click()
+Private Sub framePageViewRecords_Click()
 
 End Sub
 
@@ -154,7 +143,22 @@ Private Sub lblCloseDashboard_Click()
 
 End Sub
 
+Public Sub gotoPageNumber(ByVal pageNumber As String)
+    Dim pageId As String
+    
+    Select Case pageNumber:
+    
+        Case 1:
+            pageId = "pageAddRecord"
+            GoToPage pageId
+            
+    End Select
+            
+End Sub
+
+
 Private Sub GoToPage(ByVal pageName As String)
+    
     Dim i As Long
     On Error Resume Next
     For i = 0 To multiPageApp.Pages.Count - 1
@@ -309,7 +313,7 @@ Fail:
 End Sub
 
 Sub setPage(pageNumber As Integer)
-
+    
     Me.multiPageApp.value = pageNumber
     
 End Sub
@@ -337,7 +341,7 @@ Private Sub RegisterPages()
     
 End Sub
  
-Private Sub AddPage(ctrl As IPage, pg As Msforms.Page)
+Private Sub AddPage(ctrl As IPage, pg As MSForms.Page)
     
     On Error GoTo Fail
     ctrl.InitPage m_ctx, pg
@@ -365,26 +369,40 @@ End Sub
 ' in clsClaimRepository re-checks the role server-side.
 
 Private Sub ApplyTabVisibility()
+    
     Dim i As Long
     Dim registered As Boolean
  
     On Error Resume Next
     registered = m_ctx.IsRegistered
- 
-    multiPageApp.Pages("pgAdmin").Visible = (registered And m_ctx.IsAdmin)
- 
-    For i = 0 To multiPageApp.Pages.Count - 1
-        If multiPageApp.Pages(i).Name = "pageHome" Then
-            multiPageApp.Pages(i).enabled = True
-        Else
-            multiPageApp.Pages(i).enabled = registered
-            If Not registered Then
-                ' Say why on the tab itself - a greyed tab with no
-                ' explanation just looks broken.
-                multiPageApp.Pages(i).caption = multiPageApp.Pages(i).caption & " (locked)"
-            End If
-        End If
-    Next i
+         
+    'Admin will be visible only if Admin is logged in.
+    lblMenuItemAdmin.Visible = (registered And m_ctx.IsAdmin)
+    'multiPageApp.Pages("pgAdmin").Visible = (registered And m_ctx.IsAdmin)
+     
+'    For i = 0 To multiPageApp.Pages.Count - 1
+'        If multiPageApp.Pages(i).Name = "pageHome" Then
+'            multiPageApp.Pages(i).enabled = True
+'
+'        Else
+'            multiPageApp.Pages(i).enabled = registered
+'            If Not registered Then
+'                ' Say why on the tab itself - a greyed tab with no
+'                ' explanation just looks broken.
+'                multiPageApp.Pages(i).caption = multiPageApp.Pages(i).caption & " (locked)"
+'            End If
+'        End If
+'    Next i
+           
+    'Hide the navigation buttons if not registered
+    If Not registered Then
+        lblMenuItemAddClaim.Visible = False
+        lblMenuItemAdmin.Visible = False
+        lblMenuItemLogCall.Visible = False
+        lblMenuItemSearch.Visible = False
+        lblMenuItemViewClaims.Visible = False
+    End If
+        
     On Error GoTo 0
 End Sub
 
@@ -514,6 +532,11 @@ End Sub
 ' =====================================================================
 Private Sub ArrangeShell()
     
+    Dim registered As Boolean
+ 
+    On Error Resume Next
+    registered = m_ctx.IsRegistered
+    
     
     Me.caption = AppUtil.getAppName
     
@@ -630,10 +653,18 @@ Private Sub ArrangeShell()
     collection_navigationButton.Add Styler.getStyledButtonNavigationBar(lblMenuItemAdmin)
     collection_navigationButton.Add Styler.getStyledButtonNavigationBar(lblMenuItemSearch)
            
+    registered = m_ctx.IsRegistered
+    
     lblUserProfile.Left = frameMain.width - lblUserProfile.width
     lblUserProfile.Top = 0
     lblUserProfile.foreColor = AppUtil.getThemeColor()
-    lblUserProfile.caption = "    " & m_ctx.userName & IIf(m_ctx.IsAdmin, "  (Admin)", " (User)")
+        
+    If Not registered Then
+        lblUserProfile.caption = "    " & m_ctx.userName & " (Not Registered)"
+    Else
+        lblUserProfile.caption = "    " & m_ctx.userName & IIf(m_ctx.IsAdmin, "  (Admin)", " (User)")
+    End If
+    
        
         
 End Sub

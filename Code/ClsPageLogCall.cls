@@ -23,29 +23,29 @@ Option Explicit
 Implements IPage
 
 Private m_ctx As clsAppContext
-Private m_pg As Msforms.Page
+Private m_pg As MSForms.Page
 Private m_claim As clsClaim
 Private m_arranged As Boolean
 
 'Private WithEvents cmdFind As MSForms.CommandButton
-Private WithEvents cmdFind As Msforms.Label
+Private WithEvents cmdFind As MSForms.Label
 Attribute cmdFind.VB_VarHelpID = -1
 'Attribute cmdFind.VB_VarHelpID = -1
 'Private WithEvents cmdLog As MSForms.CommandButton
-Private WithEvents cmdLog As Msforms.Label
+Private WithEvents cmdLog As MSForms.Label
 Attribute cmdLog.VB_VarHelpID = -1
 'Attribute cmdLog.VB_VarHelpID = -1
-Private WithEvents txtClaimID As Msforms.TextBox
+Private WithEvents txtClaimID As MSForms.TextBox
 Attribute txtClaimID.VB_VarHelpID = -1
 'Attribute txtClaimID.VB_VarHelpID = -1
 
-Private cboStatus As Msforms.ComboBox
-Private txtComment As Msforms.TextBox
-Private lstHistory As Msforms.ListBox
-Private lblClaimInfo As Msforms.Label
-Private lblCurrentStatus As Msforms.Label
-Private lblAttempt As Msforms.Label
-Private lblLastComment As Msforms.Label
+Private cboStatus As MSForms.ComboBox
+Private txtComment As MSForms.TextBox
+Private lstHistory As MSForms.ListBox
+Private lblClaimInfo As MSForms.Label
+Private lblCurrentStatus As MSForms.Label
+Private lblAttempt As MSForms.Label
+Private lblLastComment As MSForms.Label
 
 Private collectionStyledControls As Collection
 
@@ -53,7 +53,7 @@ Private Property Get IPage_PageTitle() As String
     IPage_PageTitle = "Log Call"
 End Property
 
-Private Sub IPage_InitPage(ctx As clsAppContext, pg As Msforms.Page)
+Private Sub IPage_InitPage(ctx As clsAppContext, pg As MSForms.Page)
     
     Set m_ctx = ctx
     Set m_pg = pg
@@ -90,7 +90,7 @@ Private Sub IPage_OnActivate()
     
 End Sub
 
-Public Sub ConfigureHistoryList(lst As Msforms.ListBox)
+Public Sub ConfigureHistoryList(lst As MSForms.ListBox)
 
     With lst
         .ColumnCount = 4
@@ -101,7 +101,7 @@ Public Sub ConfigureHistoryList(lst As Msforms.ListBox)
 End Sub
 
 
-Private Sub txtClaimID_KeyDown(ByVal KeyCode As Msforms.ReturnInteger, ByVal Shift As Integer)
+Private Sub txtClaimID_KeyDown(ByVal KeyCode As MSForms.ReturnInteger, ByVal Shift As Integer)
     If KeyCode = vbKeyReturn Then FindClaim
 End Sub
 

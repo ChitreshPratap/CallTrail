@@ -7,9 +7,16 @@ Option Explicit
 Public Sub OnRibbonAction(control As IRibbonControl)
 
     Select Case control.ID
+        
+        Case "btnExportAll":
+            modMain.DownloadDatabase
+        
+        Case "btnOpenApp":
+            UserFormMain.Show
 
         ' --- Claim operations ---
         Case "btnAddClaimManual1", "btnAddClaimManual2":
+            
             'modMain.ShowAddClaimForm
             modMain.ShowAddClaimForm_tab 1
             'modMain.ShowAddClaimForm_tab 2

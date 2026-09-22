@@ -20,26 +20,26 @@ Option Explicit
 Implements IPage
  
 Private m_ctx As clsAppContext
-Private m_pg As Msforms.Page
+Private m_pg As MSForms.Page
 Private m_arranged As Boolean
 
-Private WithEvents cmdSave As Msforms.Label
+Private WithEvents cmdSave As MSForms.Label
 Attribute cmdSave.VB_VarHelpID = -1
 'Attribute cmdSave.VB_VarHelpID = -1
-Private WithEvents cmdClear As Msforms.Label
+Private WithEvents cmdClear As MSForms.Label
 Attribute cmdClear.VB_VarHelpID = -1
 'Attribute cmdClear.VB_VarHelpID = -1
-Private WithEvents cmdCancel As Msforms.Label
+Private WithEvents cmdCancel As MSForms.Label
 Attribute cmdCancel.VB_VarHelpID = -1
-Private WithEvents datePickerCreatedOn As Msforms.Label
+Private WithEvents datePickerCreatedOn As MSForms.Label
 Attribute datePickerCreatedOn.VB_VarHelpID = -1
 
-Private txtClaimID As Msforms.TextBox
-Private txtClaimSite As Msforms.TextBox
-Private txtProviderName As Msforms.TextBox
-Private txtQuery As Msforms.TextBox
-Private txtCreationDate As Msforms.TextBox
-Private lblInfo As Msforms.Label
+Private txtClaimID As MSForms.TextBox
+Private txtClaimSite As MSForms.TextBox
+Private txtProviderName As MSForms.TextBox
+Private txtQuery As MSForms.TextBox
+Private txtCreationDate As MSForms.TextBox
+Private lblInfo As MSForms.Label
 
 
 Private collectionStyledControls As Collection
@@ -52,7 +52,7 @@ End Property
 
  
  
-Private Sub IPage_InitPage(ctx As clsAppContext, pg As Msforms.Page)
+Private Sub IPage_InitPage(ctx As clsAppContext, pg As MSForms.Page)
     
     Set m_ctx = ctx
     Set m_pg = pg
@@ -191,7 +191,7 @@ Private Sub ClearFields()
 
 End Sub
  
-Private Sub Fail(ByVal msg As String, ctrl As Msforms.control)
+Private Sub Fail(ByVal msg As String, ctrl As MSForms.control)
     MsgBox msg, vbExclamation, "Check Details"
     On Error Resume Next
     ctrl.SetFocus
@@ -306,7 +306,7 @@ End Sub
  
 
 ' Enter in the ID box moves to the next field
-Private Sub txtClaimID_KeyDown(ByVal KeyCode As Msforms.ReturnInteger, ByVal Shift As Integer)
+Private Sub txtClaimID_KeyDown(ByVal KeyCode As MSForms.ReturnInteger, ByVal Shift As Integer)
     If KeyCode = vbKeyReturn Then txtClaimSite.SetFocus
 End Sub
 

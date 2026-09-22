@@ -11,7 +11,7 @@ Attribute VB_Exposed = False
 ' It changes the Font Size Change Only Of the provided label on Hover On/Hover Off
 
 Dim var_Name As String
-Dim var_mukhLabel As Msforms.Label
+Dim var_mukhLabel As MSForms.Label
 Dim var_originalFont As Long
 Dim var_originalBackColor As Long
 Dim var_originalForeColor As Long
@@ -19,9 +19,9 @@ Dim var_incDecFontSize As Long
 Dim var_onHoverBackColor As Long
 Dim var_onHoverForeColor As Long
 
-Public WithEvents dynaLabelParent As Msforms.UserForm
+Public WithEvents dynaLabelParent As MSForms.UserForm
 Attribute dynaLabelParent.VB_VarHelpID = -1
-Public WithEvents dynaLabel As Msforms.Label
+Public WithEvents dynaLabel As MSForms.Label
 Attribute dynaLabel.VB_VarHelpID = -1
 
 
@@ -40,7 +40,7 @@ Private Sub Class_Initialize()
 End Sub
 
 'Sub setMukhLabel(mukhLabel As control)
-Sub setMukhLabel(mukhLabel As Msforms.Label)
+Sub setMukhLabel(mukhLabel As MSForms.Label)
     
     Dim clor As Variant
     Dim fClor As Variant
@@ -53,9 +53,9 @@ Sub setMukhLabel(mukhLabel As Msforms.Label)
     
 End Sub
 
-Function getMukhLabel() As Msforms.Label
+Function getMukhLabel() As MSForms.Label
     
-    Dim tLabel As Msforms.Label
+    Dim tLabel As MSForms.Label
     Set tLabel = var_mukhLabel
     If tLabel Is Nothing Then
         Err.Raise vbObjectError + 1001, Me.classModuleName & "." & "getMukhLabel", "LabelNotSetError : Label is not set, Please set the label using function 'setMukhLabel' "
@@ -106,7 +106,7 @@ End Function
 
 Private Sub styleHoverOn()
     
-    Dim tMukhLabel As Msforms.Label
+    Dim tMukhLabel As MSForms.Label
     Set tMukhLabel = Me.getMukhLabel()
     Dim diffFontSize As Long
     diffFontSize = Me.getIncDecInFont()
@@ -135,7 +135,7 @@ End Sub
 
 Private Sub styleHoverOff()
     
-    Dim tMukhLabel As Msforms.Label
+    Dim tMukhLabel As MSForms.Label
     Set tMukhLabel = Me.getMukhLabel()
     With tMukhLabel
         .Font.Size = var_originalFont

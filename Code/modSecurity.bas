@@ -80,14 +80,14 @@ Public Sub SetDatabasePassword()
 
     On Error GoTo OpenFail
     Application.ScreenUpdating = False
-    Set wb = Workbooks.Open(FileName:=DB_PATH, UpdateLinks:=0, ReadOnly:=False, _
+    Set wb = Workbooks.Open(FileName:=DB_PATH, UpdateLinks:=0, readOnly:=False, _
                             Notify:=False, Password:=currentPwd)
     On Error GoTo Fail
 
     ' Someone else holds it: Excel opened a read-only copy, and SaveAs
     ' over the original would fail or clash with their save.
-    If wb.ReadOnly Then
-        wb.Close SaveChanges:=False
+    If wb.readOnly Then
+        wb.Close saveChanges:=False
         Application.ScreenUpdating = True
         MsgBox "Someone else has the database open. Ask everyone to close the app, then try again.", _
                vbExclamation, "Database In Use"
@@ -95,7 +95,7 @@ Public Sub SetDatabasePassword()
     End If
 
     If Not IsCurrentUserAdmin(wb) Then
-        wb.Close SaveChanges:=False
+        wb.Close saveChanges:=False
         Application.ScreenUpdating = True
         MsgBox "Only Admin users can change the database password.", vbExclamation, "Access Denied"
         Exit Sub
@@ -106,7 +106,7 @@ Public Sub SetDatabasePassword()
     Application.DisplayAlerts = False
     wb.SaveAs FileName:=DB_PATH, FileFormat:=xlOpenXMLWorkbook, Password:=DbPassword()
     Application.DisplayAlerts = True
-    wb.Close SaveChanges:=False
+    wb.Close saveChanges:=False
 
     Application.ScreenUpdating = True
 
@@ -135,7 +135,7 @@ Fail:
     Application.DisplayAlerts = True
     Application.ScreenUpdating = True
     On Error Resume Next
-    If Not wb Is Nothing Then wb.Close SaveChanges:=False
+    If Not wb Is Nothing Then wb.Close saveChanges:=False
     On Error GoTo 0
     MsgBox "Setting the password failed: " & Err.Description & vbCrLf & vbCrLf & _
            "Check the file still opens with its previous password before retrying.", _

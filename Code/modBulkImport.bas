@@ -53,8 +53,8 @@ Public Sub ProcessBulkClaims()
     Dim seen As Object, existing As Object, idKey As String
 
     Set ws = GetBulkSheet()
-    ws.Select
     If ws Is Nothing Then Exit Sub
+    ws.Select
 
     lastRow = ws.Cells(ws.Rows.Count, COL_ID).End(xlUp).Row
     If lastRow < 2 Then
@@ -305,7 +305,7 @@ Public Sub LoadClaimsFromFile()
     On Error GoTo Fail
     Application.ScreenUpdating = False
 
-    Set srcWb = Workbooks.Open(FileName:=CStr(filePath), ReadOnly:=True, UpdateLinks:=0)
+    Set srcWb = Workbooks.Open(FileName:=CStr(filePath), readOnly:=True, UpdateLinks:=0)
     Set srcWs = srcWb.Sheets(1)
     srcLast = srcWs.Cells(srcWs.Rows.Count, 1).End(xlUp).Row
 
@@ -380,8 +380,11 @@ Private Function GetBulkSheet() As Worksheet
     Set GetBulkSheet = ThisWorkbook.Sheets(BULK_SHEET)
     On Error GoTo 0
     If GetBulkSheet Is Nothing Then
-        MsgBox "The " & BULK_SHEET & " sheet doesn't exist yet." & vbCrLf & vbCrLf & _
-               "Run 'Setup Bulk Sheet' to create it.", vbExclamation, "Sheet Not Found"
+        MsgBox "Worksheet : '" & BULK_SHEET & "' doesn't exist yet." & vbCrLf & vbCrLf & _
+               "Click - 'Generate Template' first.", vbExclamation, "Sheet Not Found"
+    
+'        MsgBox "The " & BULK_SHEET & " sheet doesn't exist yet." & vbCrLf & vbCrLf & _
+'               "Run 'Setup Bulk Sheet' to create it.", vbExclamation, "Sheet Not Found"
     End If
 End Function
 

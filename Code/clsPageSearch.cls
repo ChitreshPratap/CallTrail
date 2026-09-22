@@ -28,72 +28,72 @@ Option Explicit
 Implements IPage
 
 Private m_ctx As clsAppContext
-Private m_pg As Msforms.Page
+Private m_pg As MSForms.Page
 Private m_claim As clsClaim
 Private m_dirty As Boolean
 Private m_loading As Boolean
 Private m_arranged As Boolean
 
 'Private WithEvents cmdSearch As MSForms.CommandButton
-Private WithEvents cmdSearch As Msforms.Label
+Private WithEvents cmdSearch As MSForms.Label
 Attribute cmdSearch.VB_VarHelpID = -1
 'Attribute cmdSearch.VB_VarHelpID = -1
 'Private WithEvents cmdSave As MSForms.CommandButton
-Private WithEvents cmdSave As Msforms.Label
+Private WithEvents cmdSave As MSForms.Label
 Attribute cmdSave.VB_VarHelpID = -1
 'Attribute cmdSave.VB_VarHelpID = -1
 'Private WithEvents cmdRevert As MSForms.CommandButton
-Private WithEvents cmdRevert As Msforms.Label
+Private WithEvents cmdRevert As MSForms.Label
 Attribute cmdRevert.VB_VarHelpID = -1
 'Attribute cmdRevert.VB_VarHelpID = -1
 'Private WithEvents cmdSrcReset As MSForms.CommandButton
-Private WithEvents cmdSrcReset As Msforms.Label
+Private WithEvents cmdSrcReset As MSForms.Label
 Attribute cmdSrcReset.VB_VarHelpID = -1
 'Attribute cmdRevert.VB_VarHelpID = -1
 
-Private WithEvents txtSearchID As Msforms.TextBox
+Private WithEvents txtSearchID As MSForms.TextBox
 Attribute txtSearchID.VB_VarHelpID = -1
 'Attribute txtSearchID.VB_VarHelpID = -1
-Private WithEvents txtSite As Msforms.TextBox
+Private WithEvents txtSite As MSForms.TextBox
 Attribute txtSite.VB_VarHelpID = -1
 'Attribute txtSite.VB_VarHelpID = -1
-Private WithEvents txtProvider As Msforms.TextBox
+Private WithEvents txtProvider As MSForms.TextBox
 Attribute txtProvider.VB_VarHelpID = -1
 'Attribute txtProvider.VB_VarHelpID = -1
-Private WithEvents datePickerCreatedOn As Msforms.Label
+Private WithEvents datePickerCreatedOn As MSForms.Label
 Attribute datePickerCreatedOn.VB_VarHelpID = -1
 
-Private WithEvents txtQuery As Msforms.TextBox
+Private WithEvents txtQuery As MSForms.TextBox
 Attribute txtQuery.VB_VarHelpID = -1
 'Attribute txtQuery.VB_VarHelpID = -1
-Private WithEvents txtCreationDate As Msforms.TextBox
+Private WithEvents txtCreationDate As MSForms.TextBox
 Attribute txtCreationDate.VB_VarHelpID = -1
 'Attribute txtCreationDate.VB_VarHelpID = -1
-Private WithEvents txtUpdatedSite As Msforms.TextBox
+Private WithEvents txtUpdatedSite As MSForms.TextBox
 Attribute txtUpdatedSite.VB_VarHelpID = -1
 'Attribute txtUpdatedSite.VB_VarHelpID = -1
 
 
-Private lstHistory As Msforms.ListBox
-Private lblClaimID As Msforms.Label
-Private lblSiteInitial As Msforms.Label
-Private lblSiteUpdated As Msforms.Label
-Private lblStatus As Msforms.Label
-Private lblCreatedOn As Msforms.Label
+Private lstHistory As MSForms.ListBox
+Private lblClaimID As MSForms.Label
+Private lblSiteInitial As MSForms.Label
+Private lblSiteUpdated As MSForms.Label
+Private lblStatus As MSForms.Label
+Private lblCreatedOn As MSForms.Label
 
 
-Private lblAttempt As Msforms.Label
-Private lblInsertedOn As Msforms.Label
-Private lblInsertedBy As Msforms.Label
-Private lblLastUpdated As Msforms.Label
-Private lblLastUpdatedBy As Msforms.Label
-Private lblClosedOn As Msforms.Label
-Private lblDaysOpen As Msforms.Label
-Private lblHistoryCount As Msforms.Label
-Private lblAdminNote As Msforms.Label
+Private lblAttempt As MSForms.Label
+Private lblInsertedOn As MSForms.Label
+Private lblInsertedBy As MSForms.Label
+Private lblLastUpdated As MSForms.Label
+Private lblLastUpdatedBy As MSForms.Label
+Private lblClosedOn As MSForms.Label
+Private lblDaysOpen As MSForms.Label
+Private lblHistoryCount As MSForms.Label
+Private lblAdminNote As MSForms.Label
 
-Private lblProviderName As Msforms.Label
-Private lblClaimQuery As Msforms.Label
+Private lblProviderName As MSForms.Label
+Private lblClaimQuery As MSForms.Label
 
 Private collectionStyledControls As Collection
 
@@ -101,7 +101,7 @@ Private Property Get IPage_PageTitle() As String
     IPage_PageTitle = "Search & Edit"
 End Property
 
-Private Sub IPage_InitPage(ctx As clsAppContext, pg As Msforms.Page)
+Private Sub IPage_InitPage(ctx As clsAppContext, pg As MSForms.Page)
     
     Set m_ctx = ctx
     Set m_pg = pg
@@ -152,7 +152,7 @@ Private Sub IPage_InitPage(ctx As clsAppContext, pg As Msforms.Page)
 End Sub
 
 
-Public Sub ConfigureHistoryList(lst As Msforms.ListBox)
+Public Sub ConfigureHistoryList(lst As MSForms.ListBox)
 
     With lstHistory
         .ColumnCount = 4
@@ -179,7 +179,7 @@ End Sub
 ' ---------------------------------------------------------------------
 ' Search
 ' ---------------------------------------------------------------------
-Private Sub txtSearchID_KeyDown(ByVal KeyCode As Msforms.ReturnInteger, ByVal Shift As Integer)
+Private Sub txtSearchID_KeyDown(ByVal KeyCode As MSForms.ReturnInteger, ByVal Shift As Integer)
     If KeyCode = vbKeyReturn Then DoSearch
 End Sub
 
@@ -455,7 +455,7 @@ Private Sub SetEditingEnabled(ByVal enabled As Boolean)
     
 End Sub
 
-Private Sub FailField(ByVal msg As String, ctrl As Msforms.control)
+Private Sub FailField(ByVal msg As String, ctrl As MSForms.control)
     
     MsgBox msg, vbExclamation, "Check Details"
     On Error Resume Next
