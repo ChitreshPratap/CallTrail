@@ -38,16 +38,19 @@ Option Explicit
 ' =====================================================================
 
 ' ---------------------------------------------------------------------
-' Criteria. Both filters are optional and combine with AND.
+' Criteria. All combine with AND.
 '   olderThanMonths = 0   -> no age filter
 '   closedOnly = True     -> only Closed claims (the safe default)
+'   ageBasis              -> which date the age is measured from
 ' ---------------------------------------------------------------------
 Private m_olderThanMonths As Long
 Private m_closedOnly As Boolean
+Private m_ageBasis As ArchiveAgeBasis
 
 Private Sub Class_Initialize()
     m_olderThanMonths = 6
     m_closedOnly = True
+    m_ageBasis = aabClosedElseCreated
 End Sub
 
 Public Property Let OlderThanMonths(ByVal v As Long)
@@ -64,17 +67,64 @@ Public Property Get ClosedOnly() As Boolean
     ClosedOnly = m_closedOnly
 End Property
 
+Public Property Let AgeBasis(ByVal v As ArchiveAgeBasis)
+    m_ageBasis = v
+End Property
+Public Property Get AgeBasis() As ArchiveAgeBasis
+    AgeBasis = m_ageBasis
+End Property
+
+' Human-readable name of the basis, for preview text and confirmations.
+Public Property Get AgeBasisName() As String
+    Select Case m_ageBasis
+        Case aabCreationDate:  AgeBasisName = "Creation Date"
+        Case aabInsertionDate: AgeBasisName = "Insertion Date"
+        Case aabLastUpdated:   AgeBasisName = "Last Updated"
+        Case aabClosedDate:    AgeBasisName = "Closed Date"
+        Case Else:             AgeBasisName = "Closed Date (else Creation Date)"
+    End Select
+End Property
+
+' ---------------------------------------------------------------------
+' The date a claim's age is measured from, under the current basis.
+' Returns Empty when the claim has no such date - e.g. an open claim has
+' no Closed Date, and a claim nobody has called has no Last Updated.
+'
+' Empty means "can't be shown to be old enough", so the claim does NOT
+' match. Treating a blank date as zero (30-Dec-1899) would make every
+' such claim look ancient and archive it - the dangerous direction.
+' ---------------------------------------------------------------------
+Public Function AgeDate(c As clsClaim) As Variant
+    Dim v As Variant
+
+    Select Case m_ageBasis
+        Case aabCreationDate:  v = c.ClaimCreationDate
+        Case aabInsertionDate: v = c.ClaimInsertionDate
+        Case aabLastUpdated:   v = c.LastUpdatedDate
+        Case aabClosedDate:    v = c.ClaimClosedDate
+        Case Else
+            v = c.ClaimClosedDate
+            If IsEmpty(v) Or Not IsDate(v) Then v = c.ClaimCreationDate
+    End Select
+
+    If IsEmpty(v) Then Exit Function
+    If Not IsDate(v) Then Exit Function
+    If CDate(v) = 0 Then Exit Function          ' unset Date field
+    AgeDate = CDate(v)
+End Function
+
 ' ---------------------------------------------------------------------
 ' Does a claim match the current criteria?
 '
-' Age is measured from the CLOSED date where there is one, falling back
-' to the creation date. That matters: a claim raised 8 months ago but
-' only closed last week is still recent work, and measuring from
-' creation alone would archive it the moment it closed.
+' The DEFAULT basis measures age from the closed date, falling back to
+' the creation date. A claim raised 8 months ago but closed last week is
+' still recent work; measuring from creation alone would archive it the
+' moment it closed. The other bases are there for when the admin wants
+' a different rule - but the preview says which one is in force.
 ' ---------------------------------------------------------------------
 Public Function Matches(c As clsClaim) As Boolean
     Dim cutoff As Date
-    Dim refDate As Date
+    Dim d As Variant
 
     Matches = False
 
@@ -84,18 +134,9 @@ Public Function Matches(c As clsClaim) As Boolean
 
     If m_olderThanMonths > 0 Then
         cutoff = DateAdd("m", -m_olderThanMonths, Date)
-
-        If c.IsClosed And Not IsEmpty(c.ClaimClosedDate) Then
-            If IsDate(c.ClaimClosedDate) Then
-                refDate = CDate(c.ClaimClosedDate)
-            Else
-                refDate = c.ClaimCreationDate
-            End If
-        Else
-            refDate = c.ClaimCreationDate
-        End If
-
-        If refDate > cutoff Then Exit Function
+        d = AgeDate(c)
+        If IsEmpty(d) Then Exit Function        ' no date = not provably old
+        If CDate(d) > cutoff Then Exit Function
     End If
 
     Matches = True
@@ -108,13 +149,19 @@ Public Function CountMatching(claims As Collection, Optional ByRef oldestDate As
     Dim c As clsClaim
     Dim n As Long
     Dim oldest As Date
+    Dim d As Variant
 
     If claims Is Nothing Then Exit Function
 
+    ' "Oldest" is reported on the SAME basis the age filter uses, so the
+    ' preview line and the filter can't tell two different stories.
     For Each c In claims
         If Matches(c) Then
             n = n + 1
-            If oldest = 0 Or c.ClaimCreationDate < oldest Then oldest = c.ClaimCreationDate
+            d = AgeDate(c)
+            If Not IsEmpty(d) Then
+                If oldest = 0 Or CDate(d) < oldest Then oldest = CDate(d)
+            End If
         End If
     Next c
 
@@ -161,7 +208,7 @@ Public Function ArchiveMatching(Optional ByRef historyMoved As Long) As Long
     Dim nArc As Long, nKeep As Long, nArcH As Long, nKeepH As Long
     Dim stamp As Date, userName As String
     Dim c As clsClaim
-    Dim repo As New ClsClaimRepository
+    Dim repo As New clsClaimRepository
 
     On Error GoTo Fail
     Set wb = OpenCentralDB()
@@ -191,7 +238,7 @@ Public Function ArchiveMatching(Optional ByRef historyMoved As Long) As Long
 
     ' --- decide what moves, using the in-memory claim objects ---
     Set toArchive = CreateObject("Scripting.Dictionary")
-    claimsData = wsClaims.Range(wsClaims.Cells(2, 1), wsClaims.Cells(lastRowC, lastColC)).value
+    claimsData = wsClaims.Range(wsClaims.Cells(2, 1), wsClaims.Cells(lastRowC, lastColC)).Value
 
     ReDim arcClaims(1 To UBound(claimsData, 1), 1 To lastColC + 2)   ' +2 for archive stamp
     ReDim keepClaims(1 To UBound(claimsData, 1), 1 To lastColC)
@@ -206,7 +253,7 @@ Public Function ArchiveMatching(Optional ByRef historyMoved As Long) As Long
             Next k
             arcClaims(nArc, lastColC + 1) = stamp
             arcClaims(nArc, lastColC + 2) = userName
-            toArchive(Trim$(LCase$(CStr(c.claimID)))) = True
+            toArchive(Trim$(LCase$(CStr(c.ClaimID)))) = True
         Else
             nKeep = nKeep + 1
             For k = 1 To lastColC
@@ -226,7 +273,7 @@ Public Function ArchiveMatching(Optional ByRef historyMoved As Long) As Long
     lastColH = wsHist.Cells(1, wsHist.Columns.Count).End(xlToLeft).Column
 
     If lastRowH >= 2 Then
-        histData = wsHist.Range(wsHist.Cells(2, 1), wsHist.Cells(lastRowH, lastColH)).value
+        histData = wsHist.Range(wsHist.Cells(2, 1), wsHist.Cells(lastRowH, lastColH)).Value
         ReDim arcHist(1 To UBound(histData, 1), 1 To lastColH + 2)
         ReDim keepHist(1 To UBound(histData, 1), 1 To lastColH)
 
@@ -254,7 +301,7 @@ Public Function ArchiveMatching(Optional ByRef historyMoved As Long) As Long
     ' =================================================================
     AppendBlock wsArcClaims, arcClaims, nArc, lastColC + 2
     If nArcH > 0 Then AppendBlock wsArcHist, arcHist, nArcH, lastColH + 2
-    wb.save
+    wb.Save
 
     ' =================================================================
     ' PHASE 2 - rewrite the working sheets with only the kept rows.
@@ -292,11 +339,17 @@ End Function
 Private Function ClaimFromRow(data As Variant, ByVal i As Long, hmap As Object) As clsClaim
     Dim c As New clsClaim
     On Error Resume Next
-    c.claimID = data(i, ColIdx(hmap, "ClaimID"))
+    c.ClaimID = data(i, ColIdx(hmap, "ClaimID"))
     c.ClaimStatus = data(i, ColIdx(hmap, "ClaimStatus"))
     c.ClaimCreationDate = data(i, ColIdx(hmap, "ClaimCreationDate"))
+    c.ClaimInsertionDate = data(i, ColIdx(hmap, "ClaimInsertionDate"))
+    c.LastUpdatedDate = data(i, ColIdx(hmap, "LastUpdatedDate"))
     c.ClaimClosedDate = data(i, ColIdx(hmap, "ClaimClosedDate"))
     On Error GoTo 0
+    ' Every date any age basis can use must be loaded here. This mapper
+    ' feeds the real archive run; if a basis read a date this left blank,
+    ' the preview (full claim objects) and the run would disagree about
+    ' which claims match.
     Set ClaimFromRow = c
 End Function
 
@@ -319,7 +372,7 @@ Private Sub AppendBlock(ws As Worksheet, data As Variant, ByVal n As Long, ByVal
 
     firstRow = ws.Cells(ws.Rows.Count, 1).End(xlUp).Row + 1
     If firstRow < 2 Then firstRow = 2
-    ws.Range(ws.Cells(firstRow, 1), ws.Cells(firstRow + n - 1, cols)).value = trimmed
+    ws.Range(ws.Cells(firstRow, 1), ws.Cells(firstRow + n - 1, cols)).Value = trimmed
 End Sub
 
 ' Replaces the sheet's data with only the kept rows.
@@ -350,7 +403,7 @@ Private Sub RewriteSheet(ws As Worksheet, data As Variant, ByVal n As Long, _
                 trimmed(r, k) = data(r, k)
             Next k
         Next r
-        ws.Range(ws.Cells(2, 1), ws.Cells(n + 1, cols)).value = trimmed
+        ws.Range(ws.Cells(2, 1), ws.Cells(n + 1, cols)).Value = trimmed
     End If
 
     ' --- delete whatever is left below them ---
@@ -381,4 +434,3 @@ Private Sub ResizeListObject(ws As Worksheet, ByVal n As Long, ByVal cols As Lon
     lo.Resize ws.Range(ws.Cells(1, 1), ws.Cells(newLast, cols))
     On Error GoTo 0
 End Sub
-

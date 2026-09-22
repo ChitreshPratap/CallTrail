@@ -22,6 +22,17 @@ Public Enum ClaimDateField
     cdfClosedDate = 3
 End Enum
 
+' Which date "age" is measured from when archiving. Separate from
+' ClaimDateField because it has one extra option - closed-else-created -
+' that only makes sense for archiving.
+Public Enum ArchiveAgeBasis
+    aabClosedElseCreated = 0    ' closed date; creation date if never closed (default)
+    aabCreationDate = 1         ' when the claim arose
+    aabInsertionDate = 2        ' when it was keyed into the app
+    aabLastUpdated = 3          ' last call or edit
+    aabClosedDate = 4           ' closed date only - open claims never match
+End Enum
+
 ' ---------------------------------------------------------------------
 ' Filters a collection of clsClaim.
 '
@@ -81,10 +92,10 @@ Public Function FilterClaims(source As Collection, _
 
         ' --- free-text search across the fields a user would look in ---
         If keep And needle <> "" Then
-            If InStr(1, LCase$(c.claimID), needle) = 0 _
-               And InStr(1, LCase$(c.claimSite), needle) = 0 _
+            If InStr(1, LCase$(c.ClaimID), needle) = 0 _
+               And InStr(1, LCase$(c.ClaimSite), needle) = 0 _
                And InStr(1, LCase$(c.ClaimProviderName), needle) = 0 _
-               And InStr(1, LCase$(c.claimQuery), needle) = 0 Then
+               And InStr(1, LCase$(c.ClaimQuery), needle) = 0 Then
                 keep = False
             End If
         End If
@@ -123,11 +134,11 @@ Public Function ClaimsToListArray(source As Collection) As Variant
     ReDim arr(0 To source.Count - 1, 0 To 5)  ' 0-based: ListBox expects this
     i = 0
     For Each c In source
-        arr(i, 0) = c.claimID
-        arr(i, 1) = c.claimSite
+        arr(i, 0) = c.ClaimID
+        arr(i, 1) = c.ClaimSite
         arr(i, 2) = c.ClaimProviderName
         arr(i, 3) = c.ClaimStatus
-        arr(i, 4) = c.attempt
+        arr(i, 4) = c.Attempt
         arr(i, 5) = Format$(c.ClaimCreationDate, "dd-mmm-yyyy")
         i = i + 1
     Next c
@@ -150,7 +161,7 @@ Public Function HistoryToListArray(source As Collection) As Variant
     ReDim arr(0 To source.Count - 1, 0 To 3)
     i = 0
     For Each h In source
-        arr(i, 0) = h.callerName
+        arr(i, 0) = h.CallerName
         arr(i, 1) = Format$(h.CallDateTime, "dd-mmm-yyyy hh:nn")
         arr(i, 2) = h.CallerStatus
         arr(i, 3) = h.CallerComment
@@ -162,9 +173,9 @@ End Function
 
 ' Small helper so the form doesn't repeat this parsing everywhere.
 ' Returns 0 for blank/invalid input, which the filter reads as "no limit".
-Public Function ParseDateOrZero(ByVal S As String) As Date
-    S = Trim$(S)
-    If S = "" Then Exit Function
-    If Not IsDate(S) Then Exit Function
-    ParseDateOrZero = CDate(S)
+Public Function ParseDateOrZero(ByVal s As String) As Date
+    s = Trim$(s)
+    If s = "" Then Exit Function
+    If Not IsDate(s) Then Exit Function
+    ParseDateOrZero = CDate(s)
 End Function
